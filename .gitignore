@@ -1,0 +1,17 @@
+.DS_Store
+__MACOSX/
+._*
+venv/
+__pycache__/
+
+# LLM tooling
+AGENTS.local.md
+CLAUDE.local.md
+.claude/*
+.cursor/*
+.opencode/*
+.serena/*
+.specify/*
+.superpowers/*
+openspec/*
+specs/*
