@@ -92,3 +92,9 @@ zip -r sisyphus-frames.zip sisyphus-frames -x "*.DS_Store" "__MACOSX/*"
 | `scratchpad/sisyphus/gen.py` | the frame generator |
 | `scratchpad/vchk.py` | the frame and preview checker |
 | `scratchpad/sisyphus/zoom.py` | makes an enlarged view of the frames for review |
+
+## License
+
+[MIT](LICENSE) © 2026 twjohnwu. The copy submitted to the
+[Runner Gallery](https://github.com/runcat-dev/RunnerGallery) is also
+distributed there under that repository's Apache-2.0 license.
