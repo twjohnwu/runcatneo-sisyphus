@@ -2,18 +2,23 @@ import math, os, struct, zlib, sys
 from PIL import Image, ImageDraw, ImageFont
 SP = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.abspath(os.path.join(SP, "..", ".."))  # repo root
-FD = OUT + "/sisyphus-frames"
+VARIANT = sys.argv[1] if len(sys.argv) > 1 else "sisyphus"
+if VARIANT not in ("sisyphus", "surfingphus"):
+    sys.exit("usage: gen.py [sisyphus|surfingphus]")
+FD = OUT + "/" + VARIANT + "-frames"
 K = 8
 R = 4.5
 HEAD_ANG = 15
-S = 21 / 88.0
+# terrain per variant: slope from (0, Y0) up to a plateau at Y1 from x=88
+Y0, Y1 = (34, 13) if VARIANT == "sisyphus" else (34, 24)
+S = (Y0 - Y1) / 88.0
 
 def surf(x):
-    if x <= 88: return 34 - S * x
-    return 13.0
+    if x <= 88: return Y0 - S * x
+    return float(Y1)
 
 def rock_y(x):
-    return (surf(x) - R * math.sqrt(1 + S * S) - 0.4) if x <= 88 else 13 - R - 0.4
+    return (surf(x) - R * math.sqrt(1 + S * S) - 0.4) if x <= 88 else Y1 - R - 0.4
 
 # per frame: rock centre x, man foot x, mode
 # modes: push (leg pose A/B), stand, droop, walk (A/B)
@@ -23,6 +28,14 @@ for i in range(11):
 T.append((92, 79, "stand"))
 T += [(67, 79, "droop"), (41, 79, "droop"), (15, 79, "droop")]
 T += [(14, 58, "walkA"), (14, 32, "walkB"), (14, 4, "walkA")]
+
+# surfingphus: same push frames 0-10, then he climbs onto the boulder at the top,
+# rides it down (rock x only; his feet follow the boulder), hops off at the bottom
+if VARIANT == "surfingphus":
+    T = T[:11]
+    T.append((92, 83, "step"))
+    T += [(84, 0, "surfA"), (68, 0, "surfB"), (52, 0, "surfA"), (36, 0, "surfB"), (20, 0, "surfA")]
+    T.append((14, 6, "hop"))
 
 def P(x, y): return (x * K, y * K)
 
@@ -52,8 +65,52 @@ def leg(d, hip, foot, bend):
     else:
         line(d, hip, foot, 2.0)
 
+def surfman(d, mode, rx, ry):
+    # surfer on the boulder's top, side-on, facing left (downhill): wide stance,
+    # knees bent, torso leaning back uphill (right), arms spread out
+    rf = R + 0.9 + 0.55  # foot centre distance from boulder centre (clears the halo)
+    A = mode == "surfA"
+    ph = (-0.78, 0.62) if A else (-0.72, 0.68)
+    ft = [(rx + rf * math.sin(p), ry - rf * math.cos(p)) for p in ph]
+    hip = ((ft[0][0] + ft[1][0]) / 2 + 0.8, min(ft[0][1], ft[1][1]) - 3.6)
+    t = math.radians(26 if A else 18)
+    sh = (hip[0] + 3.0 * math.sin(t), hip[1] - 3.0 * math.cos(t))
+    head = (sh[0] - 0.2, sh[1] - 2.8)
+    torso(d, hip, sh, 3.0)
+    for f in ft: leg(d, hip, f, True)
+    ash = (sh[0], sh[1] + 0.4)
+    hands = [(-4.6, -0.9), (4.6, 0.7)] if A else [(-4.6, 0.7), (4.6, -0.9)]
+    for dx, dy in hands: line(d, ash, (ash[0] + dx, ash[1] + dy), 1.8)
+    d.ellipse([P(head[0] - 2, head[1] - 2), P(head[0] + 2, head[1] + 2)], fill=255)
+
 def man(d, fx, mode, rx, ry):
     fy = surf(fx)
+    if mode.startswith("surf"):
+        surfman(d, mode, rx, ry)
+        return
+    if mode == "step":
+        # crouched on the slope, one foot already up on the boulder's flank, reaching up
+        hip = (fx, fy - 5.4)
+        sh = (hip[0] + 0.2, hip[1] - 3.2)
+        head = (sh[0] - 0.6, sh[1] - 2.6)
+        back = (fx - 1.4, surf(fx - 1.4))
+        front = (rx - 2.6, ry - 4.9)
+        torso(d, hip, sh, 3.0)
+        leg(d, hip, back, True); leg(d, hip, front, True)
+        for hd in ((rx - 6.0, ry - 2.0), (rx - 5.8, ry - 4.0)):
+            line(d, (sh[0] - 0.3, sh[1] + 0.4), hd, 1.8)
+        d.ellipse([P(head[0] - 2, head[1] - 2), P(head[0] + 2, head[1] + 2)], fill=255)
+        return
+    if mode == "hop":
+        # airborne, both feet off the ground, hopping off to the left
+        hip = (fx, fy - 8.2); sh = (fx - 0.4, hip[1] - 3.3); head = (fx - 0.8, sh[1] - 2.7)
+        feet = [(fx - 2.4, fy - 3.4), (fx + 1.6, fy - 3.0)]
+        torso(d, hip, sh, 3.0)
+        for f in feet: leg(d, hip, f, True)
+        for dx, dy in ((-2.8, -2.6), (3.8, -2.4)):
+            line(d, (sh[0], sh[1] + 0.4), (sh[0] + dx, sh[1] + dy), 1.8)
+        d.ellipse([P(head[0] - 2, head[1] - 2), P(head[0] + 2, head[1] + 2)], fill=255)
+        return
     if mode.startswith("push"):
         A = mode == "pushA"
         a, b, hh = (-3.8, 1.6, 4.7) if A else (-3.0, 2.2, 5.1)
@@ -96,7 +153,7 @@ def frame(i):
     ry = rock_y(rx)
     m = Image.new("L", (100 * K, 36 * K), 0)
     d = ImageDraw.Draw(m)
-    d.polygon([P(0, 34), P(88, 13), P(96, 13), P(100, 16), P(100, 36), P(0, 36)], fill=255)
+    d.polygon([P(0, Y0), P(88, Y1), P(96, Y1), P(100, Y1 + 3), P(100, 36), P(0, 36)], fill=255)
     man(d, fx, mode, rx, ry)
     h = R + 0.9
     d.ellipse([P(rx - h, ry - h), P(rx + h, ry + h)], fill=0)
@@ -137,8 +194,8 @@ if __name__ == "__main__":
     frames = [frame(i) for i in range(18)]
     os.makedirs(FD, exist_ok=True)
     for i, f in enumerate(frames):
-        f.save(f"{FD}/sisyphus-frame-{i}.png")
-    write_apng(frames, OUT + "/sisyphus-preview.png")
+        f.save(f"{FD}/{VARIANT}-frame-{i}.png")
+    write_apng(frames, OUT + "/" + VARIANT + "-preview.png")
     Z = 6; cw, ch = 100 * Z + 20, 36 * Z + 28
     sheet = Image.new("RGB", (3 * cw, 6 * ch), (160, 160, 160))
     dr = ImageDraw.Draw(sheet)
@@ -149,5 +206,5 @@ if __name__ == "__main__":
         dr.text((cx, cy - 22), str(i), fill=(0, 0, 0), font=fnt)
         big = f.resize((100 * Z, 36 * Z), Image.NEAREST)
         sheet.paste(big, (cx, cy), big)
-    sheet.save(SP + "/contact.png")
+    sheet.save(SP + ("/contact.png" if VARIANT == "sisyphus" else "/contact-" + VARIANT + ".png"))
     for i in (0, 17): print(i, T[i])

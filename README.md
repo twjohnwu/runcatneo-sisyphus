@@ -1,8 +1,13 @@
-# Sisyphus — a RunCat Neo runner
+# Sisyphus & Surfingphus — RunCat Neo runners
+
+This repo holds two custom runners for [RunCat Neo](https://runcat-dev.github.io/RunCatNeo/):
+**Sisyphus** (below) and **Surfingphus** (further down). Each has its own
+frames, zip and preview.
+
+## Sisyphus
 
 ![Sisyphus preview](sisyphus-preview.png)
 
-A custom runner for [RunCat Neo](https://runcat-dev.github.io/RunCatNeo/).
 Sisyphus pushes his boulder up the slope. At the top, the boulder rolls back
 down, and he walks down after it to start again. The faster your CPU works,
 the faster he pushes.
@@ -65,6 +70,28 @@ ended with the line: *"One must imagine Sisyphus happy."*
 
 That fits a menu-bar runner well. Your CPU never finishes its work either.
 
+## Surfingphus — the variant that rides the boulder
+
+![Surfingphus preview](surfingphus-preview.png)
+
+Same boulder and the same push up the hill, on a slightly lower hilltop
+so the rider fits. At the top, Surfingphus
+climbs onto the boulder and surfs it back down, arms out for balance, then
+hops off at the bottom and starts pushing again.
+
+- 18 frames, 100 × 36 px, monochrome PNG with a transparent background
+- Frames 0–10 push the boulder up, as in Sisyphus (on the lower hill)
+
+Install it the same way as Sisyphus (see [Install](#install)), with these
+changes:
+
+- **Frames:** [`surfingphus-frames.zip`](surfingphus-frames.zip) unzips to
+  `surfingphus-frames/` with `surfingphus-frame-0.png` to
+  `surfingphus-frame-17.png`.
+- **Runner Name:** `Surfingphus`.
+- **Frame order:** add the PNGs in order, from `surfingphus-frame-0.png` to
+  `surfingphus-frame-17.png`.
+
 ## Rebuilding the frames
 
 The frames are drawn by a script, not by hand. You need Python 3 and Pillow:
@@ -76,10 +103,18 @@ venv/bin/python scratchpad/sisyphus/gen.py   # writes sisyphus-frames/ and sisyp
 venv/bin/python scratchpad/vchk.py           # checks frame sizes and that the preview matches the frames
 ```
 
+For Surfingphus, pass the variant name to both scripts:
+
+```sh
+venv/bin/python scratchpad/sisyphus/gen.py surfingphus   # writes surfingphus-frames/ and surfingphus-preview.png
+venv/bin/python scratchpad/vchk.py surfingphus
+```
+
 To rebuild the zip without macOS junk files:
 
 ```sh
 zip -r sisyphus-frames.zip sisyphus-frames -x "*.DS_Store" "__MACOSX/*"
+zip -r surfingphus-frames.zip surfingphus-frames -x "*.DS_Store" "__MACOSX/*"
 ```
 
 ## Files
@@ -89,8 +124,11 @@ zip -r sisyphus-frames.zip sisyphus-frames -x "*.DS_Store" "__MACOSX/*"
 | `sisyphus-frames/` | the 18 animation frames |
 | `sisyphus-frames.zip` | the same frames, zipped in the Runner Gallery format |
 | `sisyphus-preview.png` | animated PNG preview |
-| `scratchpad/sisyphus/gen.py` | the frame generator |
-| `scratchpad/vchk.py` | the frame and preview checker |
+| `surfingphus-frames/` | the 18 Surfingphus animation frames |
+| `surfingphus-frames.zip` | the same frames, zipped in the Runner Gallery format |
+| `surfingphus-preview.png` | animated PNG preview of Surfingphus |
+| `scratchpad/sisyphus/gen.py` | the frame generator for both runners (`sisyphus` or `surfingphus`) |
+| `scratchpad/vchk.py` | the frame and preview checker (same variant argument) |
 | `scratchpad/sisyphus/zoom.py` | makes an enlarged view of the frames for review |
 
 ## License
