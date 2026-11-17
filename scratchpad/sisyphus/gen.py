@@ -65,27 +65,58 @@ def leg(d, hip, foot, bend):
     else:
         line(d, hip, foot, 2.0)
 
+BOARD_TILT = math.radians(8)  # nose down-left, roughly following the slope
+
+def board_frame(rx, ry):
+    # board centre sits on top of the boulder, clear of its halo; u runs along the board
+    # (uphill = right), n is the board's up normal
+    u = (math.cos(BOARD_TILT), -math.sin(BOARD_TILT))
+    n = (-math.sin(BOARD_TILT), -math.cos(BOARD_TILT))
+    off = R + 0.9 + 0.9
+    return (rx + n[0] * off, ry + n[1] * off), u, n
+
+def board_pt(c, u, n, s, h):
+    return (c[0] + u[0] * s + n[0] * h, c[1] + u[1] * s + n[1] * h)
+
+def draw_board(d, rx, ry):
+    c, u, n = board_frame(rx, ry)
+    # ~14 px long, 1.8 px thick, pointed nose with a little rocker
+    pts = [(-7.0, 0.4), (-5.0, 0.9), (5.0, 0.9), (6.6, 0.6), (6.6, -0.5), (5.0, -0.9), (-5.0, -0.9)]
+    d.polygon([P(*board_pt(c, u, n, s, h)) for s, h in pts], fill=255)
+
+def sparkle(d, rx, ry):
+    # a few short radiating ticks at the board's ends: the board has just appeared
+    c, u, n = board_frame(rx, ry)
+    for s0, dirs in ((-7.6, ((-1, 0), (-0.8, -0.8), (-0.8, 0.8))), (7.6, ((1, 0), (0.8, -0.8)))):
+        o = board_pt(c, u, n, s0, 0.0)
+        for dx, dy in dirs:
+            L = math.hypot(dx, dy)
+            a = (o[0] + 1.2 * dx / L, o[1] + 1.2 * dy / L)
+            b = (o[0] + 3.0 * dx / L, o[1] + 3.0 * dy / L)
+            line(d, a, b, 0.9)
+
 def surfman(d, mode, rx, ry):
-    # surfer on the boulder's top, side-on, facing left (downhill): wide stance,
-    # knees bent, torso leaning back uphill (right), arms spread out
-    rf = R + 0.9 + 0.55  # foot centre distance from boulder centre (clears the halo)
+    # surfer standing on the board across the boulder's top, side-on, facing left
+    # (downhill): wide stance, knees bent, torso leaning back uphill (right), arms out
+    c, u, n = board_frame(rx, ry)
     A = mode == "surfA"
-    ph = (-0.78, 0.62) if A else (-0.72, 0.68)
-    ft = [(rx + rf * math.sin(p), ry - rf * math.cos(p)) for p in ph]
-    hip = ((ft[0][0] + ft[1][0]) / 2 + 0.8, min(ft[0][1], ft[1][1]) - 3.6)
+    ss = (-3.4, 2.8) if A else (-3.0, 3.2)
+    ft = [board_pt(c, u, n, s, 2.3) for s in ss]
+    hip = ((ft[0][0] + ft[1][0]) / 2 + 0.8, min(ft[0][1], ft[1][1]) - 2.6)
     t = math.radians(26 if A else 18)
-    sh = (hip[0] + 3.0 * math.sin(t), hip[1] - 3.0 * math.cos(t))
-    head = (sh[0] - 0.2, sh[1] - 2.8)
+    sh = (hip[0] + 2.6 * math.sin(t), hip[1] - 2.6 * math.cos(t))
+    head = (sh[0] - 0.2, sh[1] - 2.5)
     torso(d, hip, sh, 3.0)
     for f in ft: leg(d, hip, f, True)
     ash = (sh[0], sh[1] + 0.4)
     hands = [(-4.6, -0.9), (4.6, 0.7)] if A else [(-4.6, 0.7), (4.6, -0.9)]
     for dx, dy in hands: line(d, ash, (ash[0] + dx, ash[1] + dy), 1.8)
-    d.ellipse([P(head[0] - 2, head[1] - 2), P(head[0] + 2, head[1] + 2)], fill=255)
+    d.ellipse([P(head[0] - 1.9, head[1] - 1.9), P(head[0] + 1.9, head[1] + 1.9)], fill=255)
 
 def man(d, fx, mode, rx, ry):
     fy = surf(fx)
     if mode.startswith("surf"):
+        draw_board(d, rx, ry)
         surfman(d, mode, rx, ry)
         return
     if mode == "step":
@@ -161,6 +192,8 @@ def frame(i):
     ang = rx / R + 0.6
     nx, ny = rx + 2.5 * math.cos(ang), ry + 2.5 * math.sin(ang)
     d.ellipse([P(nx - .6, ny - .6), P(nx + .6, ny + .6)], fill=0)
+    if VARIANT == "surfingphus" and i == 12:
+        sparkle(d, rx, ry)
     a = m.resize((100, 36), Image.LANCZOS)
     img = Image.new("RGBA", (100, 36), (0, 0, 0, 0))
     img.putalpha(a)

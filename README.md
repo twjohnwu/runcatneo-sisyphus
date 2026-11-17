@@ -76,8 +76,9 @@ That fits a menu-bar runner well. Your CPU never finishes its work either.
 
 Same boulder and the same push up the hill, on a slightly lower hilltop
 so the rider fits. At the top, Surfingphus
-climbs onto the boulder and surfs it back down, arms out for balance, then
-hops off at the bottom and starts pushing again.
+climbs onto the boulder, and a surfboard pops into being across its top. He
+surfs it back down standing on the board, arms out for balance, then the
+board vanishes as he hops off at the bottom and starts pushing again.
 
 - 18 frames, 100 × 36 px, monochrome PNG with a transparent background
 - Frames 0–10 push the boulder up, as in Sisyphus (on the lower hill)
