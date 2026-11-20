@@ -142,13 +142,16 @@ changes:
 
 ![Sisyphus-endless preview](sisyphus-endless-preview.png)
 
-A close-up of Sisyphus pushing the boulder up a steep, bumpy slope without
-ever reaching the top. Shoulder and hands stay against the rock, the feet take
-alternate steps, and the rubble-strewn ground scrolls past while the boulder
-rolls with it, so the loop is seamless. The faster your CPU works, the faster
+A close-up of Sisyphus pushing a bold boulder up a gentle slope without ever
+reaching the top. The boulder is a solid disc with one big keyhole-shaped crack
+that turns 45 degrees per frame, so the rolling is easy to see even at menu-bar
+size. The ground is a single thin line with a few large pebbles that scroll
+past, and man, boulder and ground are always separated by a clear gap. He
+pushes in surges: the boulder jumps forward about 2 px as he drives and settles
+back a little, and his body bobs with it. The faster your CPU works, the faster
 he pushes.
 
-- 16 frames, 100 × 36 px, monochrome PNG with a transparent background
+- 8 frames, 100 × 36 px, monochrome PNG with a transparent background
 - The whole loop is the push: there is no roll-back
 
 Install it the same way as Sisyphus (see [Install](#install)), with these
@@ -156,10 +159,10 @@ changes:
 
 - **Frames:** [`sisyphus-endless-frames.zip`](sisyphus-endless-frames.zip)
   unzips to `sisyphus-endless-frames/` with `sisyphus-endless-frame-0.png` to
-  `sisyphus-endless-frame-15.png`.
+  `sisyphus-endless-frame-7.png`.
 - **Runner Name:** `Sisyphus-endless`.
 - **Frame order:** add the PNGs in order, from `sisyphus-endless-frame-0.png`
-  to `sisyphus-endless-frame-15.png`.
+  to `sisyphus-endless-frame-7.png`.
 
 ## Rebuilding the frames
 
@@ -226,7 +229,7 @@ zip -r sisyphus-endless-frames.zip sisyphus-endless-frames -x "*.DS_Store" "__MA
 | `circusphus-frames/` | the 18 Circusphus animation frames |
 | `circusphus-frames.zip` | the same frames, zipped in the Runner Gallery format |
 | `circusphus-preview.png` | animated PNG preview of Circusphus |
-| `sisyphus-endless-frames/` | the 16 Sisyphus-endless animation frames |
+| `sisyphus-endless-frames/` | the 8 Sisyphus-endless animation frames |
 | `sisyphus-endless-frames.zip` | the same frames, zipped in the Runner Gallery format |
 | `sisyphus-endless-preview.png` | animated PNG preview of Sisyphus-endless |
 | `scratchpad/sisyphus/gen.py` | the frame generator for all five runners (`sisyphus`, `surfingphus`, `rollingphus`, `circusphus` or `sisyphus-endless`) |

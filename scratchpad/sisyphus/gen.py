@@ -321,126 +321,182 @@ def frame_circus(i, rx, fx, mode, ry):
     m.paste(255, mask=bl)
     return m
 
-# ---- sisyphus-endless: close-up in-place push loop on a bumpy uphill slope ----
+# ---- sisyphus-endless: bold close-up push loop, drawn to survive a ~18 pt menu bar ----
 # Everything is drawn in slope coordinates (s along the slope, n up from it) and rotated onto
-# the canvas by W(). The ground scrolls down-slope GS px per frame; the boulder rolls without
-# slipping (15 deg per frame), so 16 frames = 2 foot cycles = 2/3 boulder turn = one bump period.
-ENF = 16
-ER = 14.0                          # boulder radius (old close-up: 11.8)
-SC = 1.15 * ER / 12.6              # figure scale (drawn for ER 12.6, enlarged 15% for the close-up)
-ECROP = 9.0                        # px of the boulder's top cut off by the canvas top edge
-EOX = 84.0                         # canvas x of the boulder centre (man sits at the middle, boulder to his right)
-ETH = math.radians(19)             # slope angle
-GS = ER * math.radians(15)         # ground scroll per frame = rolling distance at 15 deg per frame
-EPER = ENF * GS                    # bump pattern period (= total scroll over the loop)
-EO = [EOX, 0.0]                   # canvas point of the boulder's contact with the mean slope line (y set below)
+# the canvas by W(). A thin ground line scrolls down-slope GS px per frame past a few large
+# pebbles; the boulder carries one thick asymmetric crack and turns 45 deg per frame (a full
+# turn over the loop); the man's two legs alternate every 4 frames while boulder and body
+# surge forward and slip back (ESURGE), so 8 frames = 2 strides = 2 surges = 1 boulder turn
+# = 1 pebble period.
+ENF = 8
+ER = 11.0                          # boulder radius (diameter 22)
+ETH = math.radians(6)              # slope angle
+EO = (74.0, 30.6)                  # canvas point of the slope line under the boulder centre
+GS = 4.0                           # ground scroll per frame
+EPER = ENF * GS                    # pebble period (= total scroll over the loop)
+EGAP = 1.2                         # transparent gap kept between man, boulder and ground
+EROT = 45                          # boulder turn per frame (deg, clockwise)
+ESURGE = (0.0, 1.2, 2.0, 0.6)      # boulder / upper-body surge along the slope, per frame mod 4
+EPEB = 3.8                         # pebble radius (half-disc standing on the line)
+EHS = -28.5                        # unsurged hip position along the slope
+LEG = 7.0                          # thigh = shin length
+ESTANCE = (0.0, -4.0, -8.0)        # planted-foot offset from the unsurged hip (back leg ends straight)
 
 def W(s, n):
     return (EO[0] + s * math.cos(ETH) - n * math.sin(ETH), EO[1] - s * math.sin(ETH) - n * math.cos(ETH))
 
-# bump profile: sines whose periods divide EPER, plus a few rocks/pebbles (half-discs)
-_SINES = ((1, .65, 0.3), (2, .55, 2.1), (3, .42, 4.4), (5, .30, 1.0), (7, .22, 5.2))
-_ROCKS = ((0.12, 2.0), (0.43, 1.2), (0.70, 1.6), (0.88, 0.9))   # (position / EPER, radius)
-
-def hump(p):
-    p %= EPER
-    v = sum(a * math.sin(2 * math.pi * k * p / EPER + ph) for k, a, ph in _SINES)
-    for f, r in _ROCKS:
-        for sh in (-EPER, 0, EPER):
-            dx = p - f * EPER + sh
-            if abs(dx) < r: v = max(v, math.sqrt(r * r - dx * dx) * 1.0 + 0.2)
-    return v
-
-def boulder_n(sc):
-    # lowest centre height (slope frame) that keeps the boulder's halo clear of the bumps
-    rh = ER + 0.9
-    return max(hump(q * 0.25 + sc) + math.sqrt(rh * rh - (q * 0.25) ** 2) for q in range(-int(rh * 4), int(rh * 4) + 1))
-
-# top of the boulder at its highest bob sits ECROP px above the canvas edge (cropped)
-EO[1] = -ECROP + ER + max(boulder_n(GS * k) for k in range(ENF)) * math.cos(ETH)
-
-LEG = 6.2                          # thigh = shin length in figure units (was 8.4)
-FR0 = -3.0                         # front-foot offset from the hip along the slope (figure units)
-
-def sis_man(d, i, sc, hs, hn, ap):
-    m = SC
-    ta = math.radians(ap)
-    sh = (hs + 11.5 * m * math.sin(ta), hn + 11.5 * m * math.cos(ta))
-    head = (sh[0] + 3.2 * m, sh[1] - 0.9 * m)   # canvas offset: ahead of and above the shoulder
-    line(d, W(hs, hn), W(*sh), 3.2 * m)
+def sis_man(d, i, sc, hip, shd, head):
+    # silhouette: thick torso, two thick legs (back one straight, front one bent), round head
+    line(d, hip, shd, 4.4)
     for ph in (0, 2):
         u = (i + ph) % 4
-        tri = u if u <= 2 else 4 - u   # stance 2 frames backwards with the ground, swing 2 frames forwards
-        rel = FR0 * m - GS * tri
-        lift = 2.0 * m * math.sin(math.pi * (u - 2) / 2) if u >= 2 else 0.0
-        if u >= 2: rel += 1.5 * m * math.sin(math.pi * (u - 2) / 2)   # swing foot passes ahead of the planted one
-        fs = hs + rel
-        foot = W(fs, hump(fs + sc) + 1.5 * m + lift)
-        knee = ik(W(hs, hn), foot, LEG * m, LEG * m, -1)
-        line(d, W(hs, hn), knee, 2.4 * m); line(d, knee, foot, 2.4 * m)
-    return W(*sh), W(*head)
+        if u < 3:
+            rel, lift = ESTANCE[u], 0.0
+        else:   # swing: foot passes from the back position to the front, lifted
+            rel, lift = (ESTANCE[2] + ESTANCE[0]) / 2, 3.0
+        fs = EHS + rel
+        foot = W(fs, 2.4 + lift)
+        if u == 2:
+            line(d, hip, foot, 3.2)   # back leg driven out straight
+        else:
+            knee = ik(hip, foot, LEG, LEG, -1)
+            line(d, hip, knee, 3.2); line(d, knee, foot, 3.2)
+    d.ellipse([P(head[0] - 3.0, head[1] - 3.0), P(head[0] + 3.0, head[1] + 3.0)], fill=255)
 
 def frame_endless(i):
     Wd, Ht = 100 * K, 36 * K
     sc = GS * i
+    sg = ESURGE[i % 4]
+    cxy = W(sg, ER + 0.75 + 0.4)   # boulder centre: just above the line, surges with the push
+    rh = ER + EGAP
+    # ground: thin line + large pebbles scrolling left (down-slope)
     g = Image.new("L", (Wd, Ht), 0)
     gd = ImageDraw.Draw(g)
-    pts = [W(s * 0.5, hump(s * 0.5 + sc)) for s in range(-500, 501)]
-    gd.polygon([P(*q) for q in pts] + [P(*W(250, -400)), P(*W(-250, -400))], fill=255)
-    # boulder rests on the bumps: lowest centre height that keeps the halo clear of the ground
-    rh = ER + 0.9
-    cn = boulder_n(sc)
-    cxy = W(0, cn)
-    hs, ap = -28.0 * SC, 68.0
-    hn = 12.2 * SC + 0.6 * math.cos(2 * math.pi * i / 4)
-    bm = Image.new("L", (Wd, Ht), 0)
-    shw, head = sis_man(ImageDraw.Draw(bm), i, sc, hs, hn, ap)
-    HR = 2.5 * SC                      # head radius
-    # head: own blob, tucked toward the boulder, thin gap to the torso and arms
-    hm = Image.new("L", (Wd, Ht), 0)
-    ImageDraw.Draw(hm).ellipse([P(head[0] - HR, head[1] - HR), P(head[0] + HR, head[1] + HR)], fill=255)
-    # arms: bent, hands (palm blobs) flat on the boulder's left flank just outside its halo
-    am = Image.new("L", (Wd, Ht), 0)
-    hipc = W(hs, hn)
-    for al, f in ((-14, 0.92), (-44, 0.62)):
-        a = math.radians(al)
-        ext = 0.5 * math.sin(2 * math.pi * i / 4) * (1 if al == -14 else -1)
-        hxy = (cxy[0] - (rh + 1.7) * math.cos(a) + ext, cxy[1] - (rh + 1.7) * math.sin(a))
-        st = (hipc[0] + f * (shw[0] - hipc[0]), hipc[1] + f * (shw[1] - hipc[1]))   # chest point on the torso axis
-        el = ik(st, hxy, 5.4 * SC, 5.4 * SC, 1)
-        a2 = Image.new("L", (Wd, Ht), 0)
-        ad = ImageDraw.Draw(a2)
-        line(ad, st, el, 2.0 * SC); line(ad, el, hxy, 2.0 * SC)
-        ad.ellipse([P(hxy[0] - 2.0, hxy[1] - 2.0), P(hxy[0] + 2.0, hxy[1] + 2.0)], fill=255)
-        a2.paste(0, mask=am.filter(ImageFilter.MaxFilter(17)))   # thin gap between the two arms
-        am.paste(255, mask=a2)
-    am.paste(0, mask=bm.filter(ImageFilter.MaxFilter(17)))
-    am.paste(0, mask=hm.filter(ImageFilter.MaxFilter(17)))
-    bm.paste(0, mask=hm.filter(ImageFilter.MaxFilter(17)))
+    gd.polygon([P(*W(-200, -0.75)), P(*W(200, -0.75)), P(*W(200, 0.75)), P(*W(-200, 0.75))], fill=255)
+    for k in range(-4, 5):
+        c = k * EPER + EPER * 0.5 - sc
+        gd.polygon([P(*W(c + EPEB * math.cos(t), EPEB * math.sin(t))) for t in [math.pi * j / 24 for j in range(25)]], fill=255)
+    # man: hip follows the surge (feet stay planted on the scrolling ground), body bobs with it
+    hn = 13.4 + 0.7 * (sg - 1.0)
+    hip = W(EHS + sg, hn)
+    ta = math.radians(55)               # strong forward lean from vertical
+    ss, sn = EHS + sg + 13.0 * math.sin(ta), hn + 13.0 * math.cos(ta)   # shoulder (slope frame)
+    shd = W(ss, sn)
+    head = W(ss + 2.0, sn + 3.8)
     mm = Image.new("L", (Wd, Ht), 0)
     md = ImageDraw.Draw(mm)
-    for L in (bm, am, hm): mm.paste(255, mask=L)
-    t = i % 8
-    if t < 5:   # sweat drop flicked off the head
-        sx, sy = head[0] - 2.4 - 1.1 * t, head[1] - 3.0 + 0.2 * t * t
-        md.ellipse([P(sx - .8, sy - .8), P(sx + .8, sy + .8)], fill=255)
+    sis_man(md, i, sc, hip, shd, head)
+    # arms: two straight thick lines from the shoulder to the boulder's left flank
+    for al, (da, dn) in ((20, (-1.0, -1.6)), (45, (-0.2, -0.2))):
+        a = math.radians(al)
+        tgt = (cxy[0] - ER * math.cos(a), cxy[1] - ER * math.sin(a))
+        line(md, W(ss + da, sn + dn), tgt, 3.0)
+    halo = Image.new("L", (W, H), 0)
+    ImageDraw.Draw(halo).ellipse([P(rx - h, ry - h), P(rx + h, ry + h)], fill=255)
+    mm.paste(0, mask=halo)
+    bl = Image.new("L", (W, H), 0)
+    bd = ImageDraw.Draw(bl)
+    bd.ellipse([P(rx - R, ry - R), P(rx + R, ry + R)], fill=255)
+    bl.paste(0, mask=mm.filter(ImageFilter.MaxFilter(11)))
+    ang = 0.6 - math.radians(75) * (min(i, 17) - 11) if i >= 11 else rx / R + 0.6
+    nx, ny = rx + 2.5 * math.cos(ang), ry + 2.5 * math.sin(ang)
+    bd.ellipse([P(nx - .6, ny - .6), P(nx + .6, ny + .6)], fill=0)
+    m = g.copy()
+    m.paste(255, mask=mm)
+    m.paste(255, mask=bl)
+    return m
+
+# ---- sisyphus-endless: bold close-up push loop, drawn to survive a ~18 pt menu bar ----
+# Everything is drawn in slope coordinates (s along the slope, n up from it) and rotated onto
+# the canvas by W(). A thin ground line scrolls down-slope GS px per frame past a few large
+# pebbles; the boulder carries one thick asymmetric crack and turns 45 deg per frame (a full
+# turn over the loop); the man's two legs alternate every 4 frames while boulder and body
+# surge forward and slip back (ESURGE), so 8 frames = 2 strides = 2 surges = 1 boulder turn
+# = 1 pebble period.
+ENF = 8
+ER = 11.0                          # boulder radius (diameter 22)
+ETH = math.radians(6)              # slope angle
+EO = (74.0, 30.6)                  # canvas point of the slope line under the boulder centre
+GS = 4.0                           # ground scroll per frame
+EPER = ENF * GS                    # pebble period (= total scroll over the loop)
+EGAP = 1.2                         # transparent gap kept between man, boulder and ground
+EROT = 45                          # boulder turn per frame (deg, clockwise)
+ESURGE = (0.0, 1.2, 2.0, 0.6)      # boulder / upper-body surge along the slope, per frame mod 4
+EPEB = 3.8                         # pebble radius (half-disc standing on the line)
+EHS = -28.5                        # unsurged hip position along the slope
+LEG = 7.0                          # thigh = shin length
+ESTANCE = (0.0, -4.0, -8.0)        # planted-foot offset from the unsurged hip (back leg ends straight)
+
+def W(s, n):
+    return (EO[0] + s * math.cos(ETH) - n * math.sin(ETH), EO[1] - s * math.sin(ETH) - n * math.cos(ETH))
+
+def sis_man(d, i, sc, hip, shd, head):
+    # silhouette: thick torso, two thick legs (back one straight, front one bent), round head
+    line(d, hip, shd, 4.4)
+    for ph in (0, 2):
+        u = (i + ph) % 4
+        if u < 3:
+            rel, lift = ESTANCE[u], 0.0
+        else:   # swing: foot passes from the back position to the front, lifted
+            rel, lift = (ESTANCE[2] + ESTANCE[0]) / 2, 3.0
+        fs = EHS + rel
+        foot = W(fs, 2.4 + lift)
+        if u == 2:
+            line(d, hip, foot, 3.2)   # back leg driven out straight
+        else:
+            knee = ik(hip, foot, LEG, LEG, -1)
+            line(d, hip, knee, 3.2); line(d, knee, foot, 3.2)
+    d.ellipse([P(head[0] - 3.0, head[1] - 3.0), P(head[0] + 3.0, head[1] + 3.0)], fill=255)
+
+def frame_endless(i):
+    Wd, Ht = 100 * K, 36 * K
+    sc = GS * i
+    sg = ESURGE[i % 4]
+    cxy = W(sg, ER + 0.75 + 0.4)   # boulder centre: just above the line, surges with the push
+    rh = ER + EGAP
+    # ground: thin line + large pebbles scrolling left (down-slope)
+    g = Image.new("L", (Wd, Ht), 0)
+    gd = ImageDraw.Draw(g)
+    gd.polygon([P(*W(-200, -0.75)), P(*W(200, -0.75)), P(*W(200, 0.75)), P(*W(-200, 0.75))], fill=255)
+    for k in range(-4, 5):
+        c = k * EPER + EPER * 0.5 - sc
+        gd.polygon([P(*W(c + EPEB * math.cos(t), EPEB * math.sin(t))) for t in [math.pi * j / 24 for j in range(25)]], fill=255)
+    # man: hip follows the surge (feet stay planted on the scrolling ground), body bobs with it
+    hn = 13.4 + 0.7 * (sg - 1.0)
+    hip = W(EHS + sg, hn)
+    ta = math.radians(55)               # strong forward lean from vertical
+    ss, sn = EHS + sg + 13.0 * math.sin(ta), hn + 13.0 * math.cos(ta)   # shoulder (slope frame)
+    shd = W(ss, sn)
+    head = W(ss + 2.0, sn + 3.8)
+    mm = Image.new("L", (Wd, Ht), 0)
+    md = ImageDraw.Draw(mm)
+    sis_man(md, i, sc, hip, shd, head)
+    # arms: two straight thick lines from the shoulder to the boulder's left flank
+    for al in (20, 45):
+        a = math.radians(al)
+        tgt = (cxy[0] - ER * math.cos(a), cxy[1] - ER * math.sin(a))
+        line(md, (shd[0] - 0.5, shd[1] + (0.0 if al == 20 else -1.0)), tgt, 3.0)
     halo = Image.new("L", (Wd, Ht), 0)
     ImageDraw.Draw(halo).ellipse([P(cxy[0] - rh, cxy[1] - rh), P(cxy[0] + rh, cxy[1] + rh)], fill=255)
     mm.paste(0, mask=halo)
     g.paste(0, mask=halo)
-    g.paste(0, mask=mm.filter(ImageFilter.MaxFilter(9)))
+    g.paste(0, mask=mm.filter(ImageFilter.MaxFilter(2 * int(EGAP * K) + 1)))
+    # boulder: solid disc with one thick transparent crack that turns with it
     bl = Image.new("L", (Wd, Ht), 0)
     bd = ImageDraw.Draw(bl)
     bd.ellipse([P(cxy[0] - ER, cxy[1] - ER), P(cxy[0] + ER, cxy[1] + ER)], fill=255)
-    bl.paste(0, mask=mm.filter(ImageFilter.MaxFilter(9)))
-    base = math.radians(15 * i)  # clockwise; 3-fold notch pattern, 10 deg short of closing is avoided: 16*15 = 240 = 2 * 120
-    for k in range(3):
-        a = base + math.radians(120 * k)
-        nx, ny = cxy[0] + 8.2 * math.cos(a), cxy[1] + 8.2 * math.sin(a)
-        bd.ellipse([P(nx - .9, ny - .9), P(nx + .9, ny + .9)], fill=0)
-        a2 = a + math.radians(60)
-        nx, ny = cxy[0] + 3.6 * math.cos(a2), cxy[1] + 3.6 * math.sin(a2)
-        bd.ellipse([P(nx - .6, ny - .6), P(nx + .6, ny + .6)], fill=0)
+    base = math.radians(EROT * i + 20)
+    def pol(r, da):
+        a = base + math.radians(da)
+        return (cxy[0] + r * math.cos(a), cxy[1] + r * math.sin(a))
+    def cut(a, b, w):
+        bd.line([P(*a), P(*b)], fill=0, width=int(w * K))
+        for q in (a, b):
+            bd.ellipse([P(q[0] - w / 2, q[1] - w / 2), P(q[0] + w / 2, q[1] + w / 2)], fill=0)
+    # one bold asymmetric mark: a transparent hole off-centre joined to the rim by a thick crack
+    hx, hy = pol(4.2, 150)
+    bd.ellipse([P(hx - 3.6, hy - 3.6), P(hx + 3.6, hy + 3.6)], fill=0)
+    cut(pol(ER + 1.5, 0), pol(1.0, 0), 2.6)
     m = g.copy()
     m.paste(255, mask=mm)
     m.paste(255, mask=bl)
