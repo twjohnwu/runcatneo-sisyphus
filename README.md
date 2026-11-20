@@ -1,8 +1,8 @@
-# Sisyphus, Surfingphus, Rollingphus, Circusphus, Sisyphus-endless & Circusphus-endless — RunCat Neo runners
+# Sisyphus, Surfingphus, Rollingphus, Circusphus, Sisyphus-endless, Circusphus-endless & Rollingphus-endless — RunCat Neo runners
 
-This repo holds six custom runners for [RunCat Neo](https://runcat-dev.github.io/RunCatNeo/):
-**Sisyphus** (below), **Surfingphus**, **Rollingphus**, **Circusphus** and
-**Sisyphus-endless** and **Circusphus-endless** (further down). Each has its own frames, zip and preview.
+This repo holds seven custom runners for [RunCat Neo](https://runcat-dev.github.io/RunCatNeo/):
+**Sisyphus** (below), **Surfingphus**, **Rollingphus**, **Circusphus**,
+**Sisyphus-endless**, **Circusphus-endless** and **Rollingphus-endless** (further down). Each has its own frames, zip and preview.
 
 ## Sisyphus
 
@@ -189,6 +189,28 @@ changes:
 - **Frame order:** add the PNGs in order, from `circusphus-endless-frame-0.png`
   to `circusphus-endless-frame-15.png`.
 
+## Rollingphus-endless — the tumble in the close-up style
+
+![Rollingphus-endless preview](rollingphus-endless-preview.png)
+
+Rollingphus drawn in the Sisyphus-endless close-up style, on the same steep
+ground line and with the same boulder as Circusphus-endless. He pushes it up,
+then it slips back and knocks him over. It rolls back down with him stuck to
+its rim like a sticker, turning round with it and bumping up each time it rolls
+over him. Once it stops he sits beside it, dazed, then gets up and pushes again.
+
+- 16 frames, 100 × 36 px, monochrome PNG with a transparent background
+- Frames 0–7 push up, 8 knocked back, 9–14 roll down stuck to the rim, 15 sits dazed
+
+Install it the same way as Sisyphus (see [Install](#install)), with these
+changes:
+
+- **Frames:** [`rollingphus-endless-frames.zip`](rollingphus-endless-frames.zip) unzips to `rollingphus-endless-frames/` with
+  `rollingphus-endless-frame-0.png` to `rollingphus-endless-frame-15.png`.
+- **Runner Name:** `Rollingphus-endless`.
+- **Frame order:** add the PNGs in order, from `rollingphus-endless-frame-0.png` to
+  `rollingphus-endless-frame-15.png`.
+
 ## Rebuilding the frames
 
 The frames are drawn by a script, not by hand. You need Python 3 and Pillow:
@@ -228,6 +250,8 @@ venv/bin/python scratchpad/sisyphus/gen.py sisyphus-endless   # writes sisyphus-
 venv/bin/python scratchpad/vchk.py sisyphus-endless
 venv/bin/python scratchpad/sisyphus/gen.py circusphus-endless   # writes circusphus-endless-frames/ and circusphus-endless-preview.png
 venv/bin/python scratchpad/vchk.py circusphus-endless
+venv/bin/python scratchpad/sisyphus/gen.py rollingphus-endless   # writes rollingphus-endless-frames/ and rollingphus-endless-preview.png
+venv/bin/python scratchpad/vchk.py rollingphus-endless
 ```
 
 To rebuild the zip without macOS junk files:
@@ -239,6 +263,7 @@ zip -r rollingphus-frames.zip rollingphus-frames -x "*.DS_Store" "__MACOSX/*"
 zip -r circusphus-frames.zip circusphus-frames -x "*.DS_Store" "__MACOSX/*"
 zip -r sisyphus-endless-frames.zip sisyphus-endless-frames -x "*.DS_Store" "__MACOSX/*"
 zip -r circusphus-endless-frames.zip circusphus-endless-frames -x "*.DS_Store" "__MACOSX/*"
+zip -r rollingphus-endless-frames.zip rollingphus-endless-frames -x "*.DS_Store" "__MACOSX/*"
 ```
 
 ## Files
@@ -263,7 +288,10 @@ zip -r circusphus-endless-frames.zip circusphus-endless-frames -x "*.DS_Store" "
 | `circusphus-endless-frames/` | the 16 Circusphus-endless animation frames |
 | `circusphus-endless-frames.zip` | the same frames, zipped in the Runner Gallery format |
 | `circusphus-endless-preview.png` | animated PNG preview of Circusphus-endless |
-| `scratchpad/sisyphus/gen.py` | the frame generator for all six runners (`sisyphus`, `surfingphus`, `rollingphus`, `circusphus`, `sisyphus-endless` or `circusphus-endless`) |
+| `rollingphus-endless-frames/` | the 16 Rollingphus-endless animation frames |
+| `rollingphus-endless-frames.zip` | the same frames, zipped in the Runner Gallery format |
+| `rollingphus-endless-preview.png` | animated PNG preview of Rollingphus-endless |
+| `scratchpad/sisyphus/gen.py` | the frame generator for all seven runners (`sisyphus`, `surfingphus`, `rollingphus`, `circusphus`, `sisyphus-endless`, `circusphus-endless` or `rollingphus-endless`) |
 | `scratchpad/vchk.py` | the frame and preview checker (same variant argument) |
 | `scratchpad/sisyphus/zoom.py` | makes an enlarged view of the frames for review |
 

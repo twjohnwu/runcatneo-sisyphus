@@ -3,8 +3,8 @@ from PIL import Image, ImageDraw, ImageFilter, ImageFont
 SP = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.abspath(os.path.join(SP, "..", ".."))  # repo root
 VARIANT = sys.argv[1] if len(sys.argv) > 1 else "sisyphus"
-if VARIANT not in ("sisyphus", "sisyphus-endless", "surfingphus", "rollingphus", "circusphus", "circusphus-endless"):
-    sys.exit("usage: gen.py [sisyphus|sisyphus-endless|surfingphus|rollingphus|circusphus|circusphus-endless]")
+if VARIANT not in ("sisyphus", "sisyphus-endless", "surfingphus", "rollingphus", "circusphus", "circusphus-endless", "rollingphus-endless"):
+    sys.exit("usage: gen.py [sisyphus|sisyphus-endless|surfingphus|rollingphus|circusphus|circusphus-endless|rollingphus-endless]")
 FD = OUT + "/" + VARIANT + "-frames"
 K = 8
 R = 4.5
@@ -596,11 +596,124 @@ def frame_circus_endless(i):
     m.paste(255, mask=mm)
     return m
 
+# ---- rollingphus-endless: the Sisyphus-endless close-up style, applied to Rollingphus ----
+# Same camera, slope and boulder as Circusphus-endless. Frames 0-7: he pushes it up. Frame 8: it
+# slips back and knocks him over. Frames 9-14: it rolls back down with him stuck to its rim like
+# a sticker, turning with it (the boulder bumps up as it rolls over him). Frame 15: it has stopped
+# and he sits dazed beside it, then gets up and pushes again (frame 0).
+RNF = 16
+
+def roll_state(i):
+    # (boulder turn in deg, ground scroll in px, surge along the slope)
+    if i < 8: return 45 * i, -4.0 * i, ESURGE[i % 4] * 0.6
+    if i == 8: return 360, -32.0, -2.5
+    if i < 15:
+        j = i - 8
+        return -60 * j, -32.0 + CPER / 6 * j, 0.0
+    return 0, 0.0, 0.0
+
+def stuck_pts(rel, phi):
+    # sticker pose on the rim at canvas angle phi (deg, from the centre, y down), relative to the centre
+    def Q(da, extra):
+        a = math.radians(phi + da)
+        h = rock_reach(rel, a + math.pi) + EGAP + extra
+        return (h * math.cos(a), h * math.sin(a))
+    return {"hip": Q(-24, 1.7), "sh": Q(20, 1.7), "head": Q(50, 2.4),
+            "legs": [(Q(-46, 2.6), Q(-70, 1.4)), (Q(-44, 1.2), Q(-66, 3.4))],
+            "arms": [Q(42, 5.0), Q(4, 5.4)]}
+
+def draw_stuck(md, c, st):
+    T = lambda p: (c[0] + p[0], c[1] + p[1])
+    line(md, T(st["hip"]), T(st["sh"]), 3.6)
+    for k, f in st["legs"]:
+        line(md, T(st["hip"]), T(k), 2.6); line(md, T(k), T(f), 2.6)
+    for a in st["arms"]:
+        line(md, T(st["sh"]), T(a), 2.2)
+    h = T(st["head"])
+    md.ellipse([P(h[0] - 2.7, h[1] - 2.7), P(h[0] + 2.7, h[1] + 2.7)], fill=255)
+
+def frame_rolling_endless(i):
+    Wd, Ht = 100 * K, 36 * K
+    turn, sc, sg = roll_state(i)
+    rel = [(CSC * r * math.cos(math.radians(turn + a)), CSC * r * math.sin(math.radians(turn + a))) for a, r in ROCK]
+    nrm = lambda p: -p[0] * math.sin(CTH) - p[1] * math.cos(CTH)   # height above the slope of a relative point
+    low = min(nrm(p) for p in rel)
+    st = None
+    if 9 <= i <= 14:
+        st = stuck_pts(rel, 180 - 60 * (i - 9))
+        pts = [st["hip"], st["sh"], st["head"]] + [p for lg in st["legs"] for p in lg] + st["arms"]
+        low = min(low, min(nrm(p) for p in pts) - 1.6)   # rolls up over his body
+    cxy = CW(sg, 0.75 + 0.4 - low)
+    poly = [(cxy[0] + dx, cxy[1] + dy) for dx, dy in rel]
+    g = Image.new("L", (Wd, Ht), 0)
+    gd = ImageDraw.Draw(g)
+    gd.polygon([P(*CW(-200, -0.75)), P(*CW(200, -0.75)), P(*CW(200, 0.75)), P(*CW(-200, 0.75))], fill=255)
+    for k in range(-5, 6):
+        c = k * CPER + CPER * 0.5 + sc
+        if CW(c, 0)[1] > 34.5:
+            continue
+        gd.polygon([P(*CW(c + CPEB * math.cos(t), CPEB * math.sin(t))) for t in [math.pi * j / 24 for j in range(25)]], fill=255)
+    mm = Image.new("L", (Wd, Ht), 0)
+    md = ImageDraw.Draw(mm)
+    if i < 8:
+        circ_push(md, i, sg, cxy, rel)
+    elif i == 8:
+        # knocked back down-slope: torso thrown back, arms flung up, one leg kicked up
+        hip = CW(CSC * EHS - 1.0, 4.6)
+        t = math.radians(-50)
+        sh = (hip[0] + 4.4 * math.sin(t), hip[1] - 4.4 * math.cos(t))
+        head = (sh[0] - 2.6, sh[1] - 1.6)
+        line(md, hip, sh, 4.2)
+        line(md, hip, CW(CSC * EHS - 4.0, 2.2), 2.8)
+        knee = (hip[0] + 2.4, hip[1] - 1.6)
+        line(md, hip, knee, 2.8); line(md, knee, (knee[0] + 2.6, knee[1] - 1.4), 2.8)
+        for dx, dy in ((1.8, -4.4), (3.8, -2.6)):
+            line(md, sh, (sh[0] + dx, sh[1] + dy), 2.2)
+        md.ellipse([P(head[0] - 2.9, head[1] - 2.9), P(head[0] + 2.9, head[1] + 2.9)], fill=255)
+    elif i < 15:
+        draw_stuck(md, cxy, st)
+    else:
+        # sitting dazed on the slope beside the boulder, legs out, head tilted, two stars over it
+        s0 = -17.0
+        hip = CW(s0, 3.0)
+        knee, foot = CW(s0 + 3.4, 4.6), CW(s0 + 6.8, 2.2)
+        line(md, hip, knee, 2.8); line(md, knee, foot, 2.8)
+        sh = (hip[0] - 0.9, hip[1] - 4.4)
+        line(md, hip, sh, 4.2)
+        head = (sh[0] - 1.0, sh[1] - 3.3)
+        md.ellipse([P(head[0] - 2.9, head[1] - 2.9), P(head[0] + 2.9, head[1] + 2.9)], fill=255)
+        for dx in (-1.8, 2.2):
+            line(md, (sh[0], sh[1] + 0.6), (sh[0] + dx, sh[1] + 3.8), 2.2)
+        for dx, dy in ((-4.4, -3.4), (3.8, -4.2)):
+            x, y = head[0] + dx, head[1] + dy
+            md.polygon([P(x, y - 1.3), P(x + 0.5, y), P(x, y + 1.3), P(x - 0.5, y)], fill=255)
+            md.polygon([P(x - 1.3, y), P(x, y + 0.5), P(x + 1.3, y), P(x, y - 0.5)], fill=255)
+    dil = 2 * int(EGAP * K) + 1
+    bl = Image.new("L", (Wd, Ht), 0)
+    bd = ImageDraw.Draw(bl)
+    bd.polygon([P(*p) for p in poly], fill=255)
+    for a, r, cr in ECHIPS:
+        t = math.radians(turn + a)
+        cx, cy = cxy[0] + CSC * r * math.cos(t), cxy[1] + CSC * r * math.sin(t)
+        cr *= CSC * 1.3
+        bd.ellipse([P(cx - cr, cy - cr), P(cx + cr, cy + cr)], fill=0)
+    full = Image.new("L", (Wd, Ht), 0)
+    ImageDraw.Draw(full).polygon([P(*p) for p in poly], fill=255)
+    g.paste(0, mask=full.filter(ImageFilter.MaxFilter(dil)))
+    g.paste(0, mask=mm.filter(ImageFilter.MaxFilter(dil)))
+    bl.paste(0, mask=mm.filter(ImageFilter.MaxFilter(dil)))
+    m = g.copy()
+    m.paste(255, mask=bl)
+    m.paste(255, mask=mm)
+    return m
+
 def frame(i):
     if VARIANT == "sisyphus-endless":
         return to_img(frame_endless(i))
     if VARIANT == "circusphus-endless":
         return to_img(frame_circus_endless(i))
+    if VARIANT == "rollingphus-endless":
+        return to_img(frame_rolling_endless(i))
     rx, fx, mode = T[i]
     ry = rock_y(rx)
     if mode.startswith("tumble") and mode.count(":") > 2:
@@ -671,7 +784,7 @@ def write_apng(frames, path, delay_ms=80):
     open(path, "wb").write(o)
 
 if __name__ == "__main__":
-    NF = ENF if VARIANT == "sisyphus-endless" else CNF if VARIANT == "circusphus-endless" else 18
+    NF = ENF if VARIANT == "sisyphus-endless" else CNF if VARIANT == "circusphus-endless" else RNF if VARIANT == "rollingphus-endless" else 18
     frames = [frame(i) for i in range(NF)]
     os.makedirs(FD, exist_ok=True)
     for i, f in enumerate(frames):
