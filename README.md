@@ -1,7 +1,7 @@
-# Sisyphus, Surfingphus, Rollingphus, Circusphus, Sisyphus-endless, Circusphus-endless & Rollingphus-endless — RunCat Neo runners
+# Sisyphus, Surfingphus, Rollingphus, Circusphus, Sisyphus-endless, Circusphus-endless, Rollingphus-endless & Surfingphus-endless — RunCat Neo runners
 
-This repo holds seven custom runners for [RunCat Neo](https://runcat-dev.github.io/RunCatNeo/):
-Sisyphus and six variants of him, listed below. Each has its own frames, zip
+This repo holds eight custom runners for [RunCat Neo](https://runcat-dev.github.io/RunCatNeo/):
+Sisyphus and seven variants of him, listed below. Each has its own frames, zip
 and preview.
 
 ## All runners
@@ -15,6 +15,7 @@ and preview.
 | **Sisyphus-endless** | Close-up: pushes forever up a scrolling slope, never reaching the top. (8 frames) | ![Sisyphus-endless](sisyphus-endless-preview.png) | [`sisyphus-endless-frames.zip`](sisyphus-endless-frames.zip) |
 | **Circusphus-endless** | Close-up Circusphus: pushes up, jumps on, ball-walks down, hops off. (16 frames) | ![Circusphus-endless](circusphus-endless-preview.png) | [`circusphus-endless-frames.zip`](circusphus-endless-frames.zip) |
 | **Rollingphus-endless** | Close-up Rollingphus: pushes up, gets knocked over, rolls down stuck to the rim, sits dazed. (16 frames) | ![Rollingphus-endless](rollingphus-endless-preview.png) | [`rollingphus-endless-frames.zip`](rollingphus-endless-frames.zip) |
+| **Surfingphus-endless** | Close-up Surfingphus: pushes up, jumps on, a surfboard pops in and he surfs down, hops off. (16 frames) | ![Surfingphus-endless](surfingphus-endless-preview.png) | [`surfingphus-endless-frames.zip`](surfingphus-endless-frames.zip) |
 
 All runners are 100 × 36 px monochrome PNG frames on a transparent background.
 Install any of them as described in [Install](#install), using the runner's
@@ -132,6 +133,8 @@ venv/bin/python scratchpad/sisyphus/gen.py circusphus-endless   # writes circusp
 venv/bin/python scratchpad/vchk.py circusphus-endless
 venv/bin/python scratchpad/sisyphus/gen.py rollingphus-endless   # writes rollingphus-endless-frames/ and rollingphus-endless-preview.png
 venv/bin/python scratchpad/vchk.py rollingphus-endless
+venv/bin/python scratchpad/sisyphus/gen.py surfingphus-endless   # writes surfingphus-endless-frames/ and surfingphus-endless-preview.png
+venv/bin/python scratchpad/vchk.py surfingphus-endless
 ```
 
 To rebuild the zip without macOS junk files:
@@ -144,6 +147,7 @@ zip -r circusphus-frames.zip circusphus-frames -x "*.DS_Store" "__MACOSX/*"
 zip -r sisyphus-endless-frames.zip sisyphus-endless-frames -x "*.DS_Store" "__MACOSX/*"
 zip -r circusphus-endless-frames.zip circusphus-endless-frames -x "*.DS_Store" "__MACOSX/*"
 zip -r rollingphus-endless-frames.zip rollingphus-endless-frames -x "*.DS_Store" "__MACOSX/*"
+zip -r surfingphus-endless-frames.zip surfingphus-endless-frames -x "*.DS_Store" "__MACOSX/*"
 ```
 
 ## Files
@@ -171,7 +175,10 @@ zip -r rollingphus-endless-frames.zip rollingphus-endless-frames -x "*.DS_Store"
 | `rollingphus-endless-frames/` | the 16 Rollingphus-endless animation frames |
 | `rollingphus-endless-frames.zip` | the same frames, zipped in the Runner Gallery format |
 | `rollingphus-endless-preview.png` | animated PNG preview of Rollingphus-endless |
-| `scratchpad/sisyphus/gen.py` | the frame generator for all seven runners (`sisyphus`, `surfingphus`, `rollingphus`, `circusphus`, `sisyphus-endless`, `circusphus-endless` or `rollingphus-endless`) |
+| `surfingphus-endless-frames/` | the 16 Surfingphus-endless animation frames |
+| `surfingphus-endless-frames.zip` | the same frames, zipped in the Runner Gallery format |
+| `surfingphus-endless-preview.png` | animated PNG preview of Surfingphus-endless |
+| `scratchpad/sisyphus/gen.py` | the frame generator for all eight runners (`sisyphus`, `surfingphus`, `rollingphus`, `circusphus`, `sisyphus-endless`, `circusphus-endless`, `rollingphus-endless` or `surfingphus-endless`) |
 | `scratchpad/vchk.py` | the frame and preview checker (same variant argument) |
 | `scratchpad/sisyphus/zoom.py` | makes an enlarged view of the frames for review |
 

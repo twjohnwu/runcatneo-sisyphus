@@ -3,8 +3,8 @@ from PIL import Image, ImageDraw, ImageFilter, ImageFont
 SP = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.abspath(os.path.join(SP, "..", ".."))  # repo root
 VARIANT = sys.argv[1] if len(sys.argv) > 1 else "sisyphus"
-if VARIANT not in ("sisyphus", "sisyphus-endless", "surfingphus", "rollingphus", "circusphus", "circusphus-endless", "rollingphus-endless"):
-    sys.exit("usage: gen.py [sisyphus|sisyphus-endless|surfingphus|rollingphus|circusphus|circusphus-endless|rollingphus-endless]")
+if VARIANT not in ("sisyphus", "sisyphus-endless", "surfingphus", "rollingphus", "circusphus", "circusphus-endless", "rollingphus-endless", "surfingphus-endless"):
+    sys.exit("usage: gen.py [sisyphus|sisyphus-endless|surfingphus|rollingphus|circusphus|circusphus-endless|rollingphus-endless|surfingphus-endless]")
 FD = OUT + "/" + VARIANT + "-frames"
 K = 8
 R = 4.5
@@ -707,6 +707,101 @@ def frame_rolling_endless(i):
     m.paste(255, mask=mm)
     return m
 
+# ---- surfingphus-endless: the Sisyphus-endless close-up style, applied to Surfingphus ----
+# Same camera, slope, boulder and timing as Circusphus-endless. Frames 0-7: he pushes it up.
+# Frame 8: he jumps up onto it. Frames 9-14: a surfboard pops in on top (frame 9 sparkles) and he
+# surfs it down, side-on, knees bent, arms out, the board bobbing on the turning rock.
+# Frame 15: it has stopped and he hops off to the left, ready to push again.
+SNF = 16
+
+def surf_board(rel, cxy):
+    # board frame: u along the board (uphill = right), nb its up normal; the board rests on the
+    # highest point of the turning rock under it, tilted with the slope
+    u = (math.cos(CTH), -math.sin(CTH))
+    nb = (-math.sin(CTH), -math.cos(CTH))
+    top = max(p[0] * nb[0] + p[1] * nb[1] for p in rel)
+    off = top + EGAP + 1.0
+    c = (cxy[0] + 0.6 + nb[0] * off, cxy[1] + nb[1] * off)
+    return c, u, nb
+
+def frame_surfing_endless(i):
+    Wd, Ht = 100 * K, 36 * K
+    turn, sc, sg = circ_state(i)
+    rel = [(CSC * r * math.cos(math.radians(turn + a)), CSC * r * math.sin(math.radians(turn + a))) for a, r in ROCK]
+    low = min(-dx * math.sin(CTH) - dy * math.cos(CTH) for dx, dy in rel)
+    cxy = CW(sg, 0.75 + 0.4 - low)
+    poly = [(cxy[0] + dx, cxy[1] + dy) for dx, dy in rel]
+    g = Image.new("L", (Wd, Ht), 0)
+    gd = ImageDraw.Draw(g)
+    gd.polygon([P(*CW(-200, -0.75)), P(*CW(200, -0.75)), P(*CW(200, 0.75)), P(*CW(-200, 0.75))], fill=255)
+    for k in range(-5, 6):
+        c = k * CPER + CPER * 0.5 + sc
+        if CW(c, 0)[1] > 34.5:
+            continue
+        gd.polygon([P(*CW(c + CPEB * math.cos(t), CPEB * math.sin(t))) for t in [math.pi * j / 24 for j in range(25)]], fill=255)
+    mm = Image.new("L", (Wd, Ht), 0)
+    md = ImageDraw.Draw(mm)
+    bb = Image.new("L", (Wd, Ht), 0)
+    if i < 8:
+        circ_push(md, i, sg, cxy, rel)
+    elif i == 8:
+        circ_air(md, (cxy[0] - 5.0, top_y(poly, cxy[0]) - 6.6), 1)
+    elif i < 15:
+        j = i - 9
+        c, u, nb = surf_board(rel, cxy)
+        B = lambda s, h: (c[0] + u[0] * s + nb[0] * h, c[1] + u[1] * s + nb[1] * h)
+        # ~17 px long, 2 px thick, pointed nose (left, downhill) with a little rocker
+        bd = ImageDraw.Draw(bb)
+        bd.polygon([P(*B(s, h)) for s, h in ((-8.6, 0.5), (-6.4, 1.0), (6.4, 1.0), (8.2, 0.7),
+                                              (8.2, -0.6), (6.4, -1.0), (-6.4, -1.0))], fill=255)
+        if j == 0:   # the board has just popped in: short radiating ticks at both ends
+            for s0, dirs in ((-9.4, ((-1, 0), (-0.8, -0.8), (-0.8, 0.8))), (9.0, ((1, 0), (0.8, -0.8), (0.8, 0.8)))):
+                o = B(s0, 0.0)
+                for dx, dy in dirs:
+                    L = math.hypot(dx, dy)
+                    line(bd, (o[0] + 1.4 * dx / L, o[1] + 1.4 * dy / L), (o[0] + 3.4 * dx / L, o[1] + 3.4 * dy / L), 1.1)
+        # surfer: side-on facing left, wide stance, knees bent, leaning back uphill, arms out
+        A = j % 2 == 0
+        ft = [B(s, 1.0 + EGAP + 1.3) for s in ((-4.4, 3.4) if A else (-3.8, 4.0))]
+        hip = ((ft[0][0] + ft[1][0]) / 2 + 0.9, min(ft[0][1], ft[1][1]) - 2.8)
+        t = math.radians(24 if A else 14)
+        crouch = max(0.0, 1.4 - (hip[1] - 3.4 * math.cos(t) - 3.0 - 2.9))   # keep the head inside the frame
+        hip = (hip[0], hip[1] + crouch)
+        for f in ft:
+            knee = ik(hip, f, 2.6, 2.6, 1)
+            line(md, hip, knee, 2.8); line(md, knee, f, 2.8)
+        sh = (hip[0] + 3.4 * math.sin(t), hip[1] - 3.4 * math.cos(t))
+        line(md, hip, sh, 4.4)
+        head = (sh[0] - 0.4, sh[1] - 3.0)
+        md.ellipse([P(head[0] - 2.9, head[1] - 2.9), P(head[0] + 2.9, head[1] + 2.9)], fill=255)
+        ash = (sh[0], sh[1] + 0.8)
+        for dx, dy in (((-6.0, -1.2), (6.0, 1.0)) if A else ((-6.0, 1.0), (6.0, -1.2))):
+            line(md, ash, (ash[0] + dx, ash[1] + dy), 2.3)
+    else:
+        circ_air(md, (cxy[0] - 16.0, CW(-16.0, 0)[1] - 11.0), -1)
+    # layers: ground | boulder | board | man, each kept apart by an EGAP transparent gap
+    dil = 2 * int(EGAP * K) + 1
+    bl = Image.new("L", (Wd, Ht), 0)
+    bdr = ImageDraw.Draw(bl)
+    bdr.polygon([P(*p) for p in poly], fill=255)
+    for a, r, cr in ECHIPS:
+        t = math.radians(turn + a)
+        cx, cy = cxy[0] + CSC * r * math.cos(t), cxy[1] + CSC * r * math.sin(t)
+        cr *= CSC * 1.3
+        bdr.ellipse([P(cx - cr, cy - cr), P(cx + cr, cy + cr)], fill=0)
+    full = Image.new("L", (Wd, Ht), 0)
+    ImageDraw.Draw(full).polygon([P(*p) for p in poly], fill=255)
+    over = mm.copy(); over.paste(255, mask=bb)
+    g.paste(0, mask=full.filter(ImageFilter.MaxFilter(dil)))
+    g.paste(0, mask=over.filter(ImageFilter.MaxFilter(dil)))
+    bl.paste(0, mask=over.filter(ImageFilter.MaxFilter(dil)))
+    bb.paste(0, mask=mm.filter(ImageFilter.MaxFilter(dil)))
+    m = g.copy()
+    m.paste(255, mask=bl)
+    m.paste(255, mask=bb)
+    m.paste(255, mask=mm)
+    return m
+
 def frame(i):
     if VARIANT == "sisyphus-endless":
         return to_img(frame_endless(i))
@@ -714,6 +809,8 @@ def frame(i):
         return to_img(frame_circus_endless(i))
     if VARIANT == "rollingphus-endless":
         return to_img(frame_rolling_endless(i))
+    if VARIANT == "surfingphus-endless":
+        return to_img(frame_surfing_endless(i))
     rx, fx, mode = T[i]
     ry = rock_y(rx)
     if mode.startswith("tumble") and mode.count(":") > 2:
@@ -784,7 +881,7 @@ def write_apng(frames, path, delay_ms=80):
     open(path, "wb").write(o)
 
 if __name__ == "__main__":
-    NF = ENF if VARIANT == "sisyphus-endless" else CNF if VARIANT == "circusphus-endless" else RNF if VARIANT == "rollingphus-endless" else 18
+    NF = ENF if VARIANT == "sisyphus-endless" else CNF if VARIANT == "circusphus-endless" else RNF if VARIANT == "rollingphus-endless" else SNF if VARIANT == "surfingphus-endless" else 18
     frames = [frame(i) for i in range(NF)]
     os.makedirs(FD, exist_ok=True)
     for i, f in enumerate(frames):
