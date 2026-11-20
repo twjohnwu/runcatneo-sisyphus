@@ -3,8 +3,8 @@ from PIL import Image, ImageDraw, ImageFilter, ImageFont
 SP = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.abspath(os.path.join(SP, "..", ".."))  # repo root
 VARIANT = sys.argv[1] if len(sys.argv) > 1 else "sisyphus"
-if VARIANT not in ("sisyphus", "surfingphus", "rollingphus", "circusphus"):
-    sys.exit("usage: gen.py [sisyphus|surfingphus|rollingphus|circusphus]")
+if VARIANT not in ("sisyphus", "sisyphus-endless", "surfingphus", "rollingphus", "circusphus"):
+    sys.exit("usage: gen.py [sisyphus|sisyphus-endless|surfingphus|rollingphus|circusphus]")
 FD = OUT + "/" + VARIANT + "-frames"
 K = 8
 R = 4.5
@@ -321,87 +321,114 @@ def frame_circus(i, rx, fx, mode, ry):
     m.paste(255, mask=bl)
     return m
 
+# ---- sisyphus-endless: close-up in-place push loop on a bumpy uphill slope ----
+# Everything is drawn in slope coordinates (s along the slope, n up from it) and rotated onto
+# the canvas by W(). The ground scrolls down-slope GS px per frame; the boulder rolls without
+# slipping (15 deg per frame), so 16 frames = 2 foot cycles = 2/3 boulder turn = one bump period.
+ENF = 16
+ER = 14.0                          # boulder radius (old close-up: 11.8)
+SC = ER / 12.6                     # figure scale (the figure was drawn for ER 12.6)
+ECROP = 6.5                        # px of the boulder's top cut off by the canvas top edge
+ETH = math.radians(19)             # slope angle
+GS = ER * math.radians(15)         # ground scroll per frame = rolling distance at 15 deg per frame
+EPER = ENF * GS                    # bump pattern period (= total scroll over the loop)
+EO = [58.0, 0.0]                   # canvas point of the boulder's contact with the mean slope line (y set below)
 
-# ---- sisyphus: close-up in-place push loop (12 frames, two-step cycle) ----
-NF = 12 if VARIANT == "sisyphus" else 18
-SR = 11.8            # close-up boulder radius
-SX = 56.0            # boulder centre x
-GSTEP = 2.0          # ground scroll per frame (px); 12 frames = 24 px, pattern periods divide 24
+def W(s, n):
+    return (EO[0] + s * math.cos(ETH) - n * math.sin(ETH), EO[1] - s * math.sin(ETH) - n * math.cos(ETH))
 
-def gy(x): return 34.4 - 0.06 * x
+# bump profile: sines whose periods divide EPER, plus a few rocks/pebbles (half-discs)
+_SINES = ((1, .65, 0.3), (2, .55, 2.1), (3, .42, 4.4), (5, .30, 1.0), (7, .22, 5.2))
+_ROCKS = ((0.12, 2.0), (0.43, 1.2), (0.70, 1.6), (0.88, 0.9))   # (position / EPER, radius)
 
-def leg_xy(hx, u):
-    # foot offset for one leg at cycle phase u (0..12): stance 0..6 slides back 2 px/frame
-    # with the ground, swing 6..12 comes forward with a lift
-    if u < 6: return 3.0 - GSTEP * u, 0.0
-    return -9.0 + GSTEP * (u - 6), 4.0 * math.sin(math.pi * (u - 6) / 6)
+def hump(p):
+    p %= EPER
+    v = sum(a * math.sin(2 * math.pi * k * p / EPER + ph) for k, a, ph in _SINES)
+    for f, r in _ROCKS:
+        for sh in (-EPER, 0, EPER):
+            dx = p - f * EPER + sh
+            if abs(dx) < r: v = max(v, math.sqrt(r * r - dx * dx) * 1.0 + 0.2)
+    return v
 
-def sis_man(d, i, hx, hy):
-    t = math.radians(52)
-    sh = (hx + 11.0 * math.sin(t), hy - 11.0 * math.cos(t))
-    head = (sh[0] + 2.9, sh[1] - 1.0)
-    torso(d, (hx, hy), sh, 3.6)
-    for k, ph in enumerate((0, 6)):
-        rel, lift = leg_xy(hx, (i + ph) % 12)
-        fx = hx + rel
-        foot = (fx, gy(fx) - lift - 0.2)
-        knee = ik((hx, hy), foot, 7.5, 7.5, -1)
-        line(d, (hx, hy), knee, 2.2); line(d, knee, foot, 2.2)
-    cy = gy(SX) - 1.6 - SR
-    ext = 0.5 * math.sin(2 * math.pi * i / 6)
-    for hxy in ((SX - SR + 0.8 + ext, cy + 0.5), (SX - SR + 1.6 - ext, cy + 4.6)):
-        el = ik((sh[0] - 0.6, sh[1] + 0.6), hxy, 4.0, 4.0, 1)
-        line(d, (sh[0] - 0.6, sh[1] + 0.6), el, 1.9); line(d, el, hxy, 1.9)
-    d.ellipse([P(head[0] - 2.3, head[1] - 2.3), P(head[0] + 2.3, head[1] + 2.3)], fill=255)
-    return head
+def boulder_n(sc):
+    # lowest centre height (slope frame) that keeps the boulder's halo clear of the bumps
+    rh = ER + 0.9
+    return max(hump(q * 0.25 + sc) + math.sqrt(rh * rh - (q * 0.25) ** 2) for q in range(-int(rh * 4), int(rh * 4) + 1))
 
-def frame_sis(i):
-    W, H = 100 * K, 36 * K
-    g = Image.new("L", (W, H), 0)
+# top of the boulder at its highest bob sits ECROP px above the canvas edge (cropped)
+EO[1] = -ECROP + ER + max(boulder_n(GS * k) for k in range(ENF)) * math.cos(ETH)
+
+def sis_man(d, i, sc, hs, hn, ap):
+    m = SC
+    ta = math.radians(ap)
+    sh = (hs + 11.5 * m * math.sin(ta), hn + 11.5 * m * math.cos(ta))
+    head = (sh[0] + 4.0 * m * math.sin(ta + .5), sh[1] + 4.0 * m * math.cos(ta + .5))
+    line(d, W(hs, hn), W(*sh), 3.6 * m)
+    for ph in (0, 2):
+        u = (i + ph) % 4
+        tri = u if u <= 2 else 4 - u   # stance 2 frames backwards with the ground, swing 2 frames forwards
+        rel = 4.0 * m - GS * tri
+        lift = 4.6 * m * math.sin(math.pi * (u - 2) / 2) if u >= 2 else 0.0
+        fs = hs + rel
+        foot = W(fs, hump(fs + sc) + 1.5 * m + lift)
+        knee = ik(W(hs, hn), foot, 8.4 * m, 8.4 * m, -1)
+        line(d, W(hs, hn), knee, 2.4 * m); line(d, knee, foot, 2.4 * m)
+    return W(*sh), W(*head)
+
+def frame_endless(i):
+    Wd, Ht = 100 * K, 36 * K
+    sc = GS * i
+    g = Image.new("L", (Wd, Ht), 0)
     gd = ImageDraw.Draw(g)
-    gd.line([P(0, gy(0)), P(100, gy(100))], fill=255, width=int(1.3 * K))
-    sc = GSTEP * i
-    # scrolling dashes under the line (period 12) and pebbles (period 24)
-    for n in range(-2, 10):
-        x = n * 12 + 3 - sc
-        gd.line([P(x, gy(x) + 2.6), P(x + 3.5, gy(x + 3.5) + 2.6)], fill=255, width=int(1.0 * K))
-    for n in range(-2, 6):
-        x = n * 24 + 14 - sc
-        gd.ellipse([P(x - .55, gy(x) + 4.6 - .55), P(x + .55, gy(x) + 4.6 + .55)], fill=255)
-    cy = gy(SX) - 1.6 - SR
-    hx = SX - 26.6
-    hy = gy(hx) - 10.6 + 0.7 * math.cos(2 * math.pi * i / 6)
-    mm = Image.new("L", (W, H), 0)
+    pts = [W(s * 0.5, hump(s * 0.5 + sc)) for s in range(-500, 501)]
+    gd.polygon([P(*q) for q in pts] + [P(*W(250, -400)), P(*W(-250, -400))], fill=255)
+    # boulder rests on the bumps: lowest centre height that keeps the halo clear of the ground
+    rh = ER + 0.9
+    cn = boulder_n(sc)
+    cxy = W(0, cn)
+    hs, ap = -24.5 * SC, 58.0
+    hn = 14.0 * SC + 0.6 * math.cos(2 * math.pi * i / 4)
+    mm = Image.new("L", (Wd, Ht), 0)
     md = ImageDraw.Draw(mm)
-    head = sis_man(md, i, hx, hy)
-    t = i % 12
+    shw, head = sis_man(md, i, sc, hs, hn, ap)
+    # arms: shoulder to two hand spots on the boulder's left flank
+    for al in (-4, -26):
+        a = math.radians(al)
+        hxy = (cxy[0] - (ER - 0.9) * math.cos(a), cxy[1] - (ER - 0.9) * math.sin(a))
+        ext = 0.5 * math.sin(2 * math.pi * i / 4) * (1 if al == -4 else -1)
+        hxy = (hxy[0] + ext, hxy[1])
+        el = ik((shw[0] - 0.6, shw[1] + 0.6), hxy, 5.0 * SC, 5.0 * SC, 1)
+        line(md, (shw[0] - 0.6, shw[1] + 0.6), el, 2.1 * SC); line(md, el, hxy, 2.1 * SC)
+    md.ellipse([P(head[0] - 2.6 * SC, head[1] - 2.6 * SC), P(head[0] + 2.6 * SC, head[1] + 2.6 * SC)], fill=255)
+    t = i % 8
     if t < 5:   # sweat drop flicked off the head
-        sx, sy = head[0] - 2.2 - 1.1 * t, head[1] - 2.8 + 0.18 * t * t
-        md.ellipse([P(sx - .75, sy - .75), P(sx + .75, sy + .75)], fill=255)
-    h = SR + 0.9
-    halo = Image.new("L", (W, H), 0)
-    ImageDraw.Draw(halo).ellipse([P(SX - h, cy - h), P(SX + h, cy + h)], fill=255)
+        sx, sy = head[0] - 2.4 - 1.1 * t, head[1] - 3.0 + 0.2 * t * t
+        md.ellipse([P(sx - .8, sy - .8), P(sx + .8, sy + .8)], fill=255)
+    halo = Image.new("L", (Wd, Ht), 0)
+    ImageDraw.Draw(halo).ellipse([P(cxy[0] - rh, cxy[1] - rh), P(cxy[0] + rh, cxy[1] + rh)], fill=255)
     mm.paste(0, mask=halo)
-    bl = Image.new("L", (W, H), 0)
+    g.paste(0, mask=halo)
+    g.paste(0, mask=mm.filter(ImageFilter.MaxFilter(9)))
+    bl = Image.new("L", (Wd, Ht), 0)
     bd = ImageDraw.Draw(bl)
-    bd.ellipse([P(SX - SR, cy - SR), P(SX + SR, cy + SR)], fill=255)
+    bd.ellipse([P(cxy[0] - ER, cxy[1] - ER), P(cxy[0] + ER, cxy[1] + ER)], fill=255)
     bl.paste(0, mask=mm.filter(ImageFilter.MaxFilter(9)))
-    base = math.radians(10 * i)  # 1/3 turn per loop, clockwise; 3-fold pattern so it closes
+    base = math.radians(15 * i)  # clockwise; 3-fold notch pattern, 10 deg short of closing is avoided: 16*15 = 240 = 2 * 120
     for k in range(3):
         a = base + math.radians(120 * k)
-        nx, ny = SX + 7.2 * math.cos(a), cy + 7.2 * math.sin(a)
-        bd.ellipse([P(nx - .8, ny - .8), P(nx + .8, ny + .8)], fill=0)
+        nx, ny = cxy[0] + 8.2 * math.cos(a), cxy[1] + 8.2 * math.sin(a)
+        bd.ellipse([P(nx - .9, ny - .9), P(nx + .9, ny + .9)], fill=0)
         a2 = a + math.radians(60)
-        nx, ny = SX + 3.2 * math.cos(a2), cy + 3.2 * math.sin(a2)
-        bd.ellipse([P(nx - .55, ny - .55), P(nx + .55, ny + .55)], fill=0)
+        nx, ny = cxy[0] + 3.6 * math.cos(a2), cxy[1] + 3.6 * math.sin(a2)
+        bd.ellipse([P(nx - .6, ny - .6), P(nx + .6, ny + .6)], fill=0)
     m = g.copy()
     m.paste(255, mask=mm)
     m.paste(255, mask=bl)
     return m
 
 def frame(i):
-    if VARIANT == "sisyphus":
-        return to_img(frame_sis(i))
+    if VARIANT == "sisyphus-endless":
+        return to_img(frame_endless(i))
     rx, fx, mode = T[i]
     ry = rock_y(rx)
     if mode.startswith("tumble") and mode.count(":") > 2:
@@ -472,6 +499,7 @@ def write_apng(frames, path, delay_ms=80):
     open(path, "wb").write(o)
 
 if __name__ == "__main__":
+    NF = ENF if VARIANT == "sisyphus-endless" else 18
     frames = [frame(i) for i in range(NF)]
     os.makedirs(FD, exist_ok=True)
     for i, f in enumerate(frames):
@@ -488,5 +516,5 @@ if __name__ == "__main__":
         big = f.resize((100 * Z, 36 * Z), Image.NEAREST)
         sheet.paste(big, (cx, cy), big)
     sheet.save(SP + ("/contact.png" if VARIANT == "sisyphus" else "/contact-" + VARIANT + ".png"))
-    if VARIANT != "sisyphus":
+    if VARIANT != "sisyphus-endless":
         for i in (0, 17): print(i, T[i])
