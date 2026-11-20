@@ -143,9 +143,9 @@ changes:
 ![Sisyphus-endless preview](sisyphus-endless-preview.png)
 
 A close-up of Sisyphus pushing a bold boulder up a gentle slope without ever
-reaching the top. The boulder is a solid disc with one big keyhole-shaped crack
-that turns 45 degrees per frame, so the rolling is easy to see even at menu-bar
-size. The ground is a single thin line with a few large pebbles that scroll
+reaching the top. The boulder is a lumpy rock with flat faces, a chipped corner and a
+few small chips along one side; it turns 45 degrees per frame, so the rolling is
+easy to see even at menu-bar size. The ground is a single thin line with a few large pebbles that scroll
 past, and man, boulder and ground are always separated by a clear gap. He
 pushes in surges: the boulder jumps forward about 2 px as he drives and settles
 back a little, and his body bobs with it. The faster your CPU works, the faster
