@@ -1,8 +1,8 @@
-# Sisyphus, Surfingphus, Rollingphus, Circusphus & Sisyphus-endless — RunCat Neo runners
+# Sisyphus, Surfingphus, Rollingphus, Circusphus, Sisyphus-endless & Circusphus-endless — RunCat Neo runners
 
-This repo holds five custom runners for [RunCat Neo](https://runcat-dev.github.io/RunCatNeo/):
+This repo holds six custom runners for [RunCat Neo](https://runcat-dev.github.io/RunCatNeo/):
 **Sisyphus** (below), **Surfingphus**, **Rollingphus**, **Circusphus** and
-**Sisyphus-endless** (further down). Each has its own frames, zip and preview.
+**Sisyphus-endless** and **Circusphus-endless** (further down). Each has its own frames, zip and preview.
 
 ## Sisyphus
 
@@ -164,6 +164,31 @@ changes:
 - **Frame order:** add the PNGs in order, from `sisyphus-endless-frame-0.png`
   to `sisyphus-endless-frame-7.png`.
 
+## Circusphus-endless — the clown ride in the close-up style
+
+![Circusphus-endless preview](circusphus-endless-preview.png)
+
+Circusphus drawn in the Sisyphus-endless close-up style: the camera follows the
+lumpy chipped boulder on a thin, steep ground line with pebbles. He pushes it up
+(the ground scrolls left and the boulder turns forward), jumps up onto it, and
+as it rolls back down he ball-walks on top like a circus clown, feet stepping
+and arms flailing (the ground scrolls right and the boulder turns back). Once it
+stops he hops off to the left and starts pushing again. The boulder is smaller
+than in Sisyphus-endless so that he fits standing on top of it.
+
+- 16 frames, 100 × 36 px, monochrome PNG with a transparent background
+- Frames 0–7 push up, 8 jumps on, 9–14 ride down, 15 hops off
+
+Install it the same way as Sisyphus (see [Install](#install)), with these
+changes:
+
+- **Frames:** [`circusphus-endless-frames.zip`](circusphus-endless-frames.zip)
+  unzips to `circusphus-endless-frames/` with `circusphus-endless-frame-0.png`
+  to `circusphus-endless-frame-15.png`.
+- **Runner Name:** `Circusphus-endless`.
+- **Frame order:** add the PNGs in order, from `circusphus-endless-frame-0.png`
+  to `circusphus-endless-frame-15.png`.
+
 ## Rebuilding the frames
 
 The frames are drawn by a script, not by hand. You need Python 3 and Pillow:
@@ -201,6 +226,8 @@ For Sisyphus-endless:
 ```sh
 venv/bin/python scratchpad/sisyphus/gen.py sisyphus-endless   # writes sisyphus-endless-frames/ and sisyphus-endless-preview.png
 venv/bin/python scratchpad/vchk.py sisyphus-endless
+venv/bin/python scratchpad/sisyphus/gen.py circusphus-endless   # writes circusphus-endless-frames/ and circusphus-endless-preview.png
+venv/bin/python scratchpad/vchk.py circusphus-endless
 ```
 
 To rebuild the zip without macOS junk files:
@@ -211,6 +238,7 @@ zip -r surfingphus-frames.zip surfingphus-frames -x "*.DS_Store" "__MACOSX/*"
 zip -r rollingphus-frames.zip rollingphus-frames -x "*.DS_Store" "__MACOSX/*"
 zip -r circusphus-frames.zip circusphus-frames -x "*.DS_Store" "__MACOSX/*"
 zip -r sisyphus-endless-frames.zip sisyphus-endless-frames -x "*.DS_Store" "__MACOSX/*"
+zip -r circusphus-endless-frames.zip circusphus-endless-frames -x "*.DS_Store" "__MACOSX/*"
 ```
 
 ## Files
@@ -232,7 +260,10 @@ zip -r sisyphus-endless-frames.zip sisyphus-endless-frames -x "*.DS_Store" "__MA
 | `sisyphus-endless-frames/` | the 8 Sisyphus-endless animation frames |
 | `sisyphus-endless-frames.zip` | the same frames, zipped in the Runner Gallery format |
 | `sisyphus-endless-preview.png` | animated PNG preview of Sisyphus-endless |
-| `scratchpad/sisyphus/gen.py` | the frame generator for all five runners (`sisyphus`, `surfingphus`, `rollingphus`, `circusphus` or `sisyphus-endless`) |
+| `circusphus-endless-frames/` | the 16 Circusphus-endless animation frames |
+| `circusphus-endless-frames.zip` | the same frames, zipped in the Runner Gallery format |
+| `circusphus-endless-preview.png` | animated PNG preview of Circusphus-endless |
+| `scratchpad/sisyphus/gen.py` | the frame generator for all six runners (`sisyphus`, `surfingphus`, `rollingphus`, `circusphus`, `sisyphus-endless` or `circusphus-endless`) |
 | `scratchpad/vchk.py` | the frame and preview checker (same variant argument) |
 | `scratchpad/sisyphus/zoom.py` | makes an enlarged view of the frames for review |
 

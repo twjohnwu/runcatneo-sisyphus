@@ -3,8 +3,8 @@ from PIL import Image, ImageDraw, ImageFilter, ImageFont
 SP = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.abspath(os.path.join(SP, "..", ".."))  # repo root
 VARIANT = sys.argv[1] if len(sys.argv) > 1 else "sisyphus"
-if VARIANT not in ("sisyphus", "sisyphus-endless", "surfingphus", "rollingphus", "circusphus"):
-    sys.exit("usage: gen.py [sisyphus|sisyphus-endless|surfingphus|rollingphus|circusphus]")
+if VARIANT not in ("sisyphus", "sisyphus-endless", "surfingphus", "rollingphus", "circusphus", "circusphus-endless"):
+    sys.exit("usage: gen.py [sisyphus|sisyphus-endless|surfingphus|rollingphus|circusphus|circusphus-endless]")
 FD = OUT + "/" + VARIANT + "-frames"
 K = 8
 R = 4.5
@@ -438,9 +438,169 @@ def frame_endless(i):
     m.paste(255, mask=bl)
     return m
 
+# ---- circusphus-endless: the Sisyphus-endless close-up style, applied to Circusphus ----
+# The camera follows the same lumpy chipped boulder (scaled down so he fits on top of it).
+# Frames 0-7: he pushes it up the slope (ground scrolls left, boulder turns clockwise).
+# Frame 8: he jumps up onto it. Frames 9-14: it rolls back down and he ball-walks on top like a
+# circus clown, arms flailing (ground scrolls right, boulder turns counter-clockwise).
+# Frame 15: it has stopped and he hops off to the left, ready to push again.
+# Net ground scroll and net boulder turn over the loop are both zero, so it loops seamlessly.
+CNF = 16
+CSC = 6.8 / 11.0                   # boulder (and push pose) scale against Sisyphus-endless
+CTH = math.radians(6)              # slope angle (ground rises to the right)
+CO = (52.0, 33.5)                  # canvas point of the slope line under the boulder centre
+CPER = 32.0                        # pebble period = scroll up the hill (8 x 4 px) = scroll back down
+CPEB = 2.6                         # pebble radius
+CLEG = 2.6                         # rider thigh = shin length
+CSTANCE = (2.4, 0.0, -2.4)         # rider's planted foot slides left with the rock top
+CWOB = (0.0, 7.0, 0.0, -7.0)       # rider wobble (deg) per frame mod 4
+CARMS = ((205, -15), (180, -40), (215, -5), (190, -30), (205, -15), (180, -40))
+
+def CW(s, n):
+    return (CO[0] + s * math.cos(CTH) - n * math.sin(CTH), CO[1] - s * math.sin(CTH) - n * math.cos(CTH))
+
+def top_y(poly, x):
+    # topmost y of the outline at canvas column x (poly absolute)
+    best = None
+    n = len(poly)
+    for k in range(n):
+        (x1, y1), (x2, y2) = poly[k], poly[(k + 1) % n]
+        if (x1 - x) * (x2 - x) <= 0 and x1 != x2:
+            y = y1 + (y2 - y1) * (x - x1) / (x2 - x1)
+            best = y if best is None else min(best, y)
+    return best
+
+def circ_state(i):
+    # (boulder turn in deg, ground scroll in px, surge)
+    if i < 8: return 45 * i, -4.0 * i, ESURGE[i % 4] * 0.6
+    if i == 8: return 360, -32.0, 0.0
+    if i < 15:
+        j = i - 8
+        return -60 * j, -32.0 + CPER / 6 * j, 0.0
+    return 0, 0.0, 0.0
+
+def circ_push(md, i, sg, cxy, rel):
+    f = CSC
+    hs = f * EHS
+    hn = f * 13.4 + 0.5 * (sg - 0.7)
+    hip = CW(hs + sg, hn)
+    ta = math.radians(55)
+    ss, sn = hs + sg + f * 13.0 * math.sin(ta), hn + f * 13.0 * math.cos(ta)
+    shd = CW(ss, sn)
+    head = CW(ss + 1.8, sn + 2.6)
+    line(md, hip, shd, 4.2)
+    for ph in (0, 2):
+        u = (i + ph) % 4
+        if u < 3:
+            r, lift = f * ESTANCE[u], 0.0
+        else:
+            r, lift = f * (ESTANCE[2] + ESTANCE[0]) / 2, 1.9
+        foot = CW(hs + r, 2.2 + lift)
+        if u == 2:
+            line(md, hip, foot, 2.8)
+        else:
+            knee = ik(hip, foot, f * LEG, f * LEG, -1)
+            line(md, hip, knee, 2.8); line(md, knee, foot, 2.8)
+    md.ellipse([P(head[0] - 2.9, head[1] - 2.9), P(head[0] + 2.9, head[1] + 2.9)], fill=255)
+    for al in (20, 45):
+        a = math.radians(al)
+        rr = rock_reach(rel, a)
+        line(md, (shd[0] - 0.4, shd[1] + (0.0 if al == 20 else -0.8)),
+             (cxy[0] - rr * math.cos(a), cxy[1] - rr * math.sin(a)), 2.4)
+
+def circ_ride(md, i, poly, cxy):
+    j = i - 9
+    hx = cxy[0] + 0.4
+    ytop = top_y(poly, hx)
+    hip = (hx, ytop - EGAP - 1.4 - 3.8)
+    for ph in (0, 2):
+        u = (j + ph) % 4
+        if u < 3:
+            r, lift = CSTANCE[u], 0.0
+        else:   # swing: lifted, back from the front position to the back one
+            r, lift = 0.0, 2.6
+        fx = hx + r
+        f = (fx, top_y(poly, fx) - EGAP - 1.3 - lift)
+        knee = ik(hip, f, CLEG, CLEG, 1)   # knees bend forward (left)
+        line(md, hip, knee, 2.8); line(md, knee, f, 2.8)
+    wob = math.radians(CWOB[j % 4] + 4)    # leans back a little, wobbling
+    sh = (hip[0] + 3.8 * math.sin(wob), hip[1] - 3.8 * math.cos(wob))
+    line(md, hip, sh, 4.6)
+    head = (sh[0] + 3.4 * math.sin(wob) - 0.8, sh[1] - 3.4 * math.cos(wob))
+    md.ellipse([P(head[0] - 2.9, head[1] - 2.9), P(head[0] + 2.9, head[1] + 2.9)], fill=255)
+    ash = (sh[0], sh[1] + 0.8)
+    for a in CARMS[j]:   # arms spread wide, flailing: canvas angle of the upper arm (y down)
+        t = math.radians(a)
+        el = (ash[0] + 3.6 * math.cos(t), ash[1] + 3.6 * math.sin(t))
+        t2 = t + math.radians(-35 if math.cos(t) < 0 else 35) * (1 if (j % 2) else -1)
+        hd = (el[0] + 3.2 * math.cos(t2), el[1] + 3.2 * math.sin(t2))
+        line(md, ash, el, 2.3); line(md, el, hd, 2.3)
+
+def circ_air(md, hip, face):
+    # airborne, knees tucked towards `face` (+1 right, -1 left), arms thrown up
+    sh = (hip[0] - 0.4 * face, hip[1] - 4.4)
+    head = (sh[0] + 0.6 * face, sh[1] - 3.6)
+    line(md, hip, sh, 4.6)
+    for dx in (0.0, -1.4 * face):
+        knee = (hip[0] + 2.6 * face + dx, hip[1] + 1.0)
+        foot = (hip[0] + 0.6 * face + dx, hip[1] + 3.6)
+        line(md, hip, knee, 2.8); line(md, knee, foot, 2.8)
+    md.ellipse([P(head[0] - 2.9, head[1] - 2.9), P(head[0] + 2.9, head[1] + 2.9)], fill=255)
+    ash = (sh[0], sh[1] + 0.8)
+    for dx in (-3.4, 3.4):
+        line(md, ash, (ash[0] + dx, ash[1] - 5.2), 2.3)
+
+def frame_circus_endless(i):
+    Wd, Ht = 100 * K, 36 * K
+    turn, sc, sg = circ_state(i)
+    rel = [(CSC * r * math.cos(math.radians(turn + a)), CSC * r * math.sin(math.radians(turn + a))) for a, r in ROCK]
+    low = min(-dx * math.sin(CTH) - dy * math.cos(CTH) for dx, dy in rel)
+    cxy = CW(sg, 0.75 + 0.4 - low)
+    poly = [(cxy[0] + dx, cxy[1] + dy) for dx, dy in rel]
+    # ground: thin line + pebbles; scrolls left while he climbs, right while he rides down
+    g = Image.new("L", (Wd, Ht), 0)
+    gd = ImageDraw.Draw(g)
+    gd.polygon([P(*CW(-200, -0.75)), P(*CW(200, -0.75)), P(*CW(200, 0.75)), P(*CW(-200, 0.75))], fill=255)
+    for k in range(-5, 6):
+        c = k * CPER + CPER * 0.5 + sc
+        if CW(c, 0)[1] > 34.5:   # skip pebbles that would only show as crumbs at the bottom edge
+            continue
+        gd.polygon([P(*CW(c + CPEB * math.cos(t), CPEB * math.sin(t))) for t in [math.pi * j / 24 for j in range(25)]], fill=255)
+    mm = Image.new("L", (Wd, Ht), 0)
+    md = ImageDraw.Draw(mm)
+    if i < 8:
+        circ_push(md, i, sg, cxy, rel)
+    elif i == 8:
+        circ_air(md, (cxy[0] - 5.0, top_y(poly, cxy[0]) - 6.6), 1)
+    elif i < 15:
+        circ_ride(md, i, poly, cxy)
+    else:
+        circ_air(md, (cxy[0] - 16.0, CW(-16.0, 0)[1] - 11.0), -1)
+    # layers: ground | boulder | man, each kept apart by an EGAP transparent gap
+    dil = 2 * int(EGAP * K) + 1
+    bl = Image.new("L", (Wd, Ht), 0)
+    bd = ImageDraw.Draw(bl)
+    bd.polygon([P(*p) for p in poly], fill=255)
+    for a, r, cr in ECHIPS:
+        t = math.radians(turn + a)
+        cx, cy = cxy[0] + CSC * r * math.cos(t), cxy[1] + CSC * r * math.sin(t)
+        cr *= CSC * 1.3
+        bd.ellipse([P(cx - cr, cy - cr), P(cx + cr, cy + cr)], fill=0)
+    full = Image.new("L", (Wd, Ht), 0)
+    ImageDraw.Draw(full).polygon([P(*p) for p in poly], fill=255)
+    g.paste(0, mask=full.filter(ImageFilter.MaxFilter(dil)))
+    g.paste(0, mask=mm.filter(ImageFilter.MaxFilter(dil)))
+    bl.paste(0, mask=mm.filter(ImageFilter.MaxFilter(dil)))
+    m = g.copy()
+    m.paste(255, mask=bl)
+    m.paste(255, mask=mm)
+    return m
+
 def frame(i):
     if VARIANT == "sisyphus-endless":
         return to_img(frame_endless(i))
+    if VARIANT == "circusphus-endless":
+        return to_img(frame_circus_endless(i))
     rx, fx, mode = T[i]
     ry = rock_y(rx)
     if mode.startswith("tumble") and mode.count(":") > 2:
@@ -511,7 +671,7 @@ def write_apng(frames, path, delay_ms=80):
     open(path, "wb").write(o)
 
 if __name__ == "__main__":
-    NF = ENF if VARIANT == "sisyphus-endless" else 18
+    NF = ENF if VARIANT == "sisyphus-endless" else CNF if VARIANT == "circusphus-endless" else 18
     frames = [frame(i) for i in range(NF)]
     os.makedirs(FD, exist_ok=True)
     for i, f in enumerate(frames):
@@ -528,5 +688,5 @@ if __name__ == "__main__":
         big = f.resize((100 * Z, 36 * Z), Image.NEAREST)
         sheet.paste(big, (cx, cy), big)
     sheet.save(SP + ("/contact.png" if VARIANT == "sisyphus" else "/contact-" + VARIANT + ".png"))
-    if VARIANT != "sisyphus-endless":
+    if not VARIANT.endswith("-endless"):
         for i in (0, 17): print(i, T[i])
