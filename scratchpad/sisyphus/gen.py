@@ -321,7 +321,87 @@ def frame_circus(i, rx, fx, mode, ry):
     m.paste(255, mask=bl)
     return m
 
+
+# ---- sisyphus: close-up in-place push loop (12 frames, two-step cycle) ----
+NF = 12 if VARIANT == "sisyphus" else 18
+SR = 11.8            # close-up boulder radius
+SX = 56.0            # boulder centre x
+GSTEP = 2.0          # ground scroll per frame (px); 12 frames = 24 px, pattern periods divide 24
+
+def gy(x): return 34.4 - 0.06 * x
+
+def leg_xy(hx, u):
+    # foot offset for one leg at cycle phase u (0..12): stance 0..6 slides back 2 px/frame
+    # with the ground, swing 6..12 comes forward with a lift
+    if u < 6: return 3.0 - GSTEP * u, 0.0
+    return -9.0 + GSTEP * (u - 6), 4.0 * math.sin(math.pi * (u - 6) / 6)
+
+def sis_man(d, i, hx, hy):
+    t = math.radians(52)
+    sh = (hx + 11.0 * math.sin(t), hy - 11.0 * math.cos(t))
+    head = (sh[0] + 2.9, sh[1] - 1.0)
+    torso(d, (hx, hy), sh, 3.6)
+    for k, ph in enumerate((0, 6)):
+        rel, lift = leg_xy(hx, (i + ph) % 12)
+        fx = hx + rel
+        foot = (fx, gy(fx) - lift - 0.2)
+        knee = ik((hx, hy), foot, 7.5, 7.5, -1)
+        line(d, (hx, hy), knee, 2.2); line(d, knee, foot, 2.2)
+    cy = gy(SX) - 1.6 - SR
+    ext = 0.5 * math.sin(2 * math.pi * i / 6)
+    for hxy in ((SX - SR + 0.8 + ext, cy + 0.5), (SX - SR + 1.6 - ext, cy + 4.6)):
+        el = ik((sh[0] - 0.6, sh[1] + 0.6), hxy, 4.0, 4.0, 1)
+        line(d, (sh[0] - 0.6, sh[1] + 0.6), el, 1.9); line(d, el, hxy, 1.9)
+    d.ellipse([P(head[0] - 2.3, head[1] - 2.3), P(head[0] + 2.3, head[1] + 2.3)], fill=255)
+    return head
+
+def frame_sis(i):
+    W, H = 100 * K, 36 * K
+    g = Image.new("L", (W, H), 0)
+    gd = ImageDraw.Draw(g)
+    gd.line([P(0, gy(0)), P(100, gy(100))], fill=255, width=int(1.3 * K))
+    sc = GSTEP * i
+    # scrolling dashes under the line (period 12) and pebbles (period 24)
+    for n in range(-2, 10):
+        x = n * 12 + 3 - sc
+        gd.line([P(x, gy(x) + 2.6), P(x + 3.5, gy(x + 3.5) + 2.6)], fill=255, width=int(1.0 * K))
+    for n in range(-2, 6):
+        x = n * 24 + 14 - sc
+        gd.ellipse([P(x - .55, gy(x) + 4.6 - .55), P(x + .55, gy(x) + 4.6 + .55)], fill=255)
+    cy = gy(SX) - 1.6 - SR
+    hx = SX - 26.6
+    hy = gy(hx) - 10.6 + 0.7 * math.cos(2 * math.pi * i / 6)
+    mm = Image.new("L", (W, H), 0)
+    md = ImageDraw.Draw(mm)
+    head = sis_man(md, i, hx, hy)
+    t = i % 12
+    if t < 5:   # sweat drop flicked off the head
+        sx, sy = head[0] - 2.2 - 1.1 * t, head[1] - 2.8 + 0.18 * t * t
+        md.ellipse([P(sx - .75, sy - .75), P(sx + .75, sy + .75)], fill=255)
+    h = SR + 0.9
+    halo = Image.new("L", (W, H), 0)
+    ImageDraw.Draw(halo).ellipse([P(SX - h, cy - h), P(SX + h, cy + h)], fill=255)
+    mm.paste(0, mask=halo)
+    bl = Image.new("L", (W, H), 0)
+    bd = ImageDraw.Draw(bl)
+    bd.ellipse([P(SX - SR, cy - SR), P(SX + SR, cy + SR)], fill=255)
+    bl.paste(0, mask=mm.filter(ImageFilter.MaxFilter(9)))
+    base = math.radians(10 * i)  # 1/3 turn per loop, clockwise; 3-fold pattern so it closes
+    for k in range(3):
+        a = base + math.radians(120 * k)
+        nx, ny = SX + 7.2 * math.cos(a), cy + 7.2 * math.sin(a)
+        bd.ellipse([P(nx - .8, ny - .8), P(nx + .8, ny + .8)], fill=0)
+        a2 = a + math.radians(60)
+        nx, ny = SX + 3.2 * math.cos(a2), cy + 3.2 * math.sin(a2)
+        bd.ellipse([P(nx - .55, ny - .55), P(nx + .55, ny + .55)], fill=0)
+    m = g.copy()
+    m.paste(255, mask=mm)
+    m.paste(255, mask=bl)
+    return m
+
 def frame(i):
+    if VARIANT == "sisyphus":
+        return to_img(frame_sis(i))
     rx, fx, mode = T[i]
     ry = rock_y(rx)
     if mode.startswith("tumble") and mode.count(":") > 2:
@@ -392,13 +472,13 @@ def write_apng(frames, path, delay_ms=80):
     open(path, "wb").write(o)
 
 if __name__ == "__main__":
-    frames = [frame(i) for i in range(18)]
+    frames = [frame(i) for i in range(NF)]
     os.makedirs(FD, exist_ok=True)
     for i, f in enumerate(frames):
         f.save(f"{FD}/{VARIANT}-frame-{i}.png")
     write_apng(frames, OUT + "/" + VARIANT + "-preview.png")
     Z = 6; cw, ch = 100 * Z + 20, 36 * Z + 28
-    sheet = Image.new("RGB", (3 * cw, 6 * ch), (160, 160, 160))
+    sheet = Image.new("RGB", (3 * cw, ((NF + 2) // 3) * ch), (160, 160, 160))
     dr = ImageDraw.Draw(sheet)
     try: fnt = ImageFont.truetype("/System/Library/Fonts/Helvetica.ttc", 18)
     except Exception: fnt = ImageFont.load_default()
@@ -408,4 +488,5 @@ if __name__ == "__main__":
         big = f.resize((100 * Z, 36 * Z), Image.NEAREST)
         sheet.paste(big, (cx, cy), big)
     sheet.save(SP + ("/contact.png" if VARIANT == "sisyphus" else "/contact-" + VARIANT + ".png"))
-    for i in (0, 17): print(i, T[i])
+    if VARIANT != "sisyphus":
+        for i in (0, 17): print(i, T[i])

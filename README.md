@@ -8,11 +8,12 @@ This repo holds four custom runners for [RunCat Neo](https://runcat-dev.github.i
 
 ![Sisyphus preview](sisyphus-preview.png)
 
-Sisyphus pushes his boulder up the slope. At the top, the boulder rolls back
-down, and he walks down after it to start again. The faster your CPU works,
-the faster he pushes.
+Sisyphus leans into his boulder in a close-up, in-place push loop: shoulder
+and hands against the rock, back leg driving, feet taking alternate steps
+while a thin sloped ground line with dashes scrolls past, so he seems to
+climb forever. The faster your CPU works, the faster he pushes.
 
-- 18 frames, 100 × 36 px, monochrome PNG with a transparent background
+- 12 frames, 100 × 36 px, monochrome PNG with a transparent background
 - Gallery tag: `fitness`
 
 ## Install
@@ -25,7 +26,7 @@ Pick one:
 
 - **From this repo:** download [`sisyphus-frames.zip`](sisyphus-frames.zip)
   and unzip it. You get a `sisyphus-frames/` folder with
-  `sisyphus-frame-0.png` to `sisyphus-frame-17.png`.
+  `sisyphus-frame-0.png` to `sisyphus-frame-11.png`.
 - **From the Runner Gallery:** once it is listed there, open
   <https://runcat-dev.github.io/RunnerGallery/>, find **Sisyphus**, click
   **Download**, and unzip the file.
@@ -39,7 +40,7 @@ Pick one:
 3. In the **Custom Runner Editor**, set **Runner Name** to `Sisyphus` and
    choose **Monochrome**.
 4. Click **Add Frame** and add the PNGs in order, from `sisyphus-frame-0.png`
-   to `sisyphus-frame-17.png`. The order matters: frame 0 is the first
+   to `sisyphus-frame-11.png`. The order matters: frame 0 is the first
    frame of the animation.
 5. Save, then select **Sisyphus** as your runner.
 
@@ -183,7 +184,7 @@ zip -r circusphus-frames.zip circusphus-frames -x "*.DS_Store" "__MACOSX/*"
 
 | Path | What it is |
 |---|---|
-| `sisyphus-frames/` | the 18 animation frames |
+| `sisyphus-frames/` | the 12 animation frames |
 | `sisyphus-frames.zip` | the same frames, zipped in the Runner Gallery format |
 | `sisyphus-preview.png` | animated PNG preview |
 | `surfingphus-frames/` | the 18 Surfingphus animation frames |
