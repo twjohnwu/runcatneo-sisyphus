@@ -328,7 +328,7 @@ def frame_circus(i, rx, fx, mode, ry):
 ENF = 16
 ER = 14.0                          # boulder radius (old close-up: 11.8)
 SC = 1.15 * ER / 12.6              # figure scale (drawn for ER 12.6, enlarged 15% for the close-up)
-ECROP = 6.5                        # px of the boulder's top cut off by the canvas top edge
+ECROP = 9.0                        # px of the boulder's top cut off by the canvas top edge
 EOX = 84.0                         # canvas x of the boulder centre (man sits at the middle, boulder to his right)
 ETH = math.radians(19)             # slope angle
 GS = ER * math.radians(15)         # ground scroll per frame = rolling distance at 15 deg per frame
@@ -359,6 +359,9 @@ def boulder_n(sc):
 # top of the boulder at its highest bob sits ECROP px above the canvas edge (cropped)
 EO[1] = -ECROP + ER + max(boulder_n(GS * k) for k in range(ENF)) * math.cos(ETH)
 
+LEG = 6.2                          # thigh = shin length in figure units (was 8.4)
+FR0 = -3.0                         # front-foot offset from the hip along the slope (figure units)
+
 def sis_man(d, i, sc, hs, hn, ap):
     m = SC
     ta = math.radians(ap)
@@ -368,11 +371,12 @@ def sis_man(d, i, sc, hs, hn, ap):
     for ph in (0, 2):
         u = (i + ph) % 4
         tri = u if u <= 2 else 4 - u   # stance 2 frames backwards with the ground, swing 2 frames forwards
-        rel = 4.0 * m - GS * tri
-        lift = 4.6 * m * math.sin(math.pi * (u - 2) / 2) if u >= 2 else 0.0
+        rel = FR0 * m - GS * tri
+        lift = 2.0 * m * math.sin(math.pi * (u - 2) / 2) if u >= 2 else 0.0
+        if u >= 2: rel += 1.5 * m * math.sin(math.pi * (u - 2) / 2)   # swing foot passes ahead of the planted one
         fs = hs + rel
         foot = W(fs, hump(fs + sc) + 1.5 * m + lift)
-        knee = ik(W(hs, hn), foot, 8.4 * m, 8.4 * m, -1)
+        knee = ik(W(hs, hn), foot, LEG * m, LEG * m, -1)
         line(d, W(hs, hn), knee, 2.4 * m); line(d, knee, foot, 2.4 * m)
     return W(*sh), W(*head)
 
@@ -387,8 +391,8 @@ def frame_endless(i):
     rh = ER + 0.9
     cn = boulder_n(sc)
     cxy = W(0, cn)
-    hs, ap = -29.0 * SC, 62.0
-    hn = 13.4 * SC + 0.6 * math.cos(2 * math.pi * i / 4)
+    hs, ap = -28.0 * SC, 68.0
+    hn = 12.2 * SC + 0.6 * math.cos(2 * math.pi * i / 4)
     bm = Image.new("L", (Wd, Ht), 0)
     shw, head = sis_man(ImageDraw.Draw(bm), i, sc, hs, hn, ap)
     HR = 2.5 * SC                      # head radius
