@@ -2,11 +2,12 @@
 
 ## Sisyphus
 
-![Sisyphus preview](sisyphus-preview.png)
+![Sisyphus preview](sisyphus-endless-preview.png)
 
-Sisyphus pushes his boulder up the slope. At the top, the boulder rolls back
-down, and he walks down after it to start again. The faster your CPU works,
-the faster he pushes.
+Sisyphus leans hard into his boulder and pushes it up a slope that never
+ends. The ground scrolls past under his feet and the rough, chipped boulder
+turns with every push, but he never reaches the top. The faster your CPU
+works, the faster he pushes.
 
 ## The story of Sisyphus
 
@@ -59,7 +60,7 @@ Pick one:
 
 - **From this repo:** download [`sisyphus-frames.zip`](sisyphus-frames.zip)
   and unzip it. You get a `sisyphus-frames/` folder with
-  `sisyphus-frame-0.png` to `sisyphus-frame-17.png`.
+  `sisyphus-frame-0.png` to `sisyphus-frame-n.png`.
 - **From the Runner Gallery:** once it is listed there, open
   <https://runcat-dev.github.io/RunnerGallery/>, find **Sisyphus**, click
   **Download**, and unzip the file.
@@ -73,7 +74,7 @@ Pick one:
 3. In the **Custom Runner Editor**, set **Runner Name** to `Sisyphus` and
    choose **Monochrome**.
 4. Click **Add Frame** and add the PNGs in order, from `sisyphus-frame-0.png`
-   to `sisyphus-frame-17.png`. The order matters: frame 0 is the first
+   to `sisyphus-frame-n.png`. The order matters: frame 0 is the first
    frame of the animation.
 5. Save, then select **Sisyphus** as your runner.
 
