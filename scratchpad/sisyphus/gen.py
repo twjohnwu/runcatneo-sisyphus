@@ -3,14 +3,14 @@ from PIL import Image, ImageDraw, ImageFilter, ImageFont
 SP = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.abspath(os.path.join(SP, "..", ".."))  # repo root
 VARIANT = sys.argv[1] if len(sys.argv) > 1 else "sisyphus"
-if VARIANT not in ("sisyphus", "surfingphus", "rollingphus"):
-    sys.exit("usage: gen.py [sisyphus|surfingphus|rollingphus]")
+if VARIANT not in ("sisyphus", "surfingphus", "rollingphus", "circusphus"):
+    sys.exit("usage: gen.py [sisyphus|surfingphus|rollingphus|circusphus]")
 FD = OUT + "/" + VARIANT + "-frames"
 K = 8
 R = 4.5
 HEAD_ANG = 15
 # terrain per variant: slope from (0, Y0) up to a plateau at Y1 from x=88
-Y0, Y1 = (34, 24) if VARIANT == "surfingphus" else (34, 13)
+Y0, Y1 = (34, 24) if VARIANT in ("surfingphus", "circusphus") else (34, 13)
 S = (Y0 - Y1) / 88.0
 
 def surf(x):
@@ -46,6 +46,15 @@ if VARIANT == "rollingphus":
     T += [(79, 0, "tumble:180:0"), (63, 0, "tumble:90:1:1.5"), (46, 0, "tumble:0:0"),
           (30, 0, "tumble:-90:1"), (14, 0, "tumble:-180:0")]
     T.append((14, 5, "dazed"))
+
+# circusphus: same push frames 0-10 on the low terrain, then he jumps onto the boulder at the
+# top and ball-walks on it like a circus clown (feet alternate, arms flail) as it rolls down
+# (~16 px/frame, notch counter-clockwise), and hops off to the left once it has stopped
+if VARIANT == "circusphus":
+    T = T[:11]
+    T.append((88, 0, "jump"))
+    T += [(76, 0, "ballA"), (60, 0, "ballB"), (44, 0, "ballA"), (28, 0, "ballB"), (16, 0, "ballA")]
+    T.append((14, 5, "hop"))
 
 def P(x, y): return (x * K, y * K)
 
@@ -171,6 +180,32 @@ def man(d, fx, mode, rx, ry):
         _, phi, pose = mode.split(":")[:3]
         stuck(d, rx, ry, float(phi), int(pose))
         return
+    if mode == "jump":
+        # airborne above the boulder's top, knees tucked, arms thrown up
+        hip = (rx - 3.0, ry - 10.2); sh = (rx - 2.7, ry - 13.2); head = (rx - 2.4, ry - 15.8)
+        torso(d, hip, sh, 3.0)
+        for f in ((rx - 4.4, ry - 7.2), (rx - 0.8, ry - 7.4)): leg(d, hip, f, True)
+        for dx, dy in ((-2.8, -3.2), (3.0, -3.0)):
+            line(d, (sh[0], sh[1] + 0.4), (sh[0] + dx, sh[1] + dy), 1.8)
+        d.ellipse([P(head[0] - 2, head[1] - 2), P(head[0] + 2, head[1] + 2)], fill=255)
+        return
+    if mode.startswith("ball"):
+        # standing on the boulder's top, facing left: feet swap forward/back each frame
+        # (one swinging foot lifted), torso swaying, arms flailing up/down alternately
+        A = mode == "ballA"
+        dxs, lifts = ((-3.0, 1.6), (0.0, 1.0)) if A else ((-1.6, 3.0), (1.0, 0.0))
+        rr = R + 1.5
+        ft = [(rx + dx, ry - math.sqrt(rr * rr - dx * dx) - lf) for dx, lf in zip(dxs, lifts)]
+        hip = (rx + (-0.5 if A else 0.5), (ft[0][1] + ft[1][1]) / 2 - 5.0)
+        t = math.radians(-9 if A else 9)
+        sh = (hip[0] + 3.2 * math.sin(t), hip[1] - 3.2 * math.cos(t))
+        head = (sh[0] + 0.6 * math.sin(t), sh[1] - 2.6)
+        torso(d, hip, sh, 3.0)
+        for f in ft: leg(d, hip, f, True)
+        hands = [(-4.2, -3.4), (4.4, 1.0)] if A else [(-4.2, 1.0), (4.4, -3.4)]
+        for dx, dy in hands: line(d, (sh[0], sh[1] + 0.4), (sh[0] + dx, sh[1] + dy), 1.8)
+        d.ellipse([P(head[0] - 2, head[1] - 2), P(head[0] + 2, head[1] + 2)], fill=255)
+        return
     if mode == "hit":
         # knocked backward (left) by the boulder: torso thrown back, arms flung up, one leg kicked up
         hip = (fx, fy - 5.6)
@@ -262,11 +297,37 @@ def man(d, fx, mode, rx, ry):
             line(d, ash, (sh[0] + dx, fy - h), 1.8)
     d.ellipse([P(head[0] - 2, head[1] - 2), P(head[0] + 2, head[1] + 2)], fill=255)
 
+def frame_circus(i, rx, fx, mode, ry):
+    # layered so the man and his separation outline never cut the hill:
+    # hill | man (minus boulder halo) | boulder (minus man outline, minus notch)
+    W, H = 100 * K, 36 * K
+    g = Image.new("L", (W, H), 0)
+    ImageDraw.Draw(g).polygon([P(0, Y0), P(88, Y1), P(96, Y1), P(100, Y1 + 3), P(100, 36), P(0, 36)], fill=255)
+    mm = Image.new("L", (W, H), 0)
+    man(ImageDraw.Draw(mm), fx, mode, rx, ry)
+    h = R + 0.9
+    halo = Image.new("L", (W, H), 0)
+    ImageDraw.Draw(halo).ellipse([P(rx - h, ry - h), P(rx + h, ry + h)], fill=255)
+    mm.paste(0, mask=halo)
+    bl = Image.new("L", (W, H), 0)
+    bd = ImageDraw.Draw(bl)
+    bd.ellipse([P(rx - R, ry - R), P(rx + R, ry + R)], fill=255)
+    bl.paste(0, mask=mm.filter(ImageFilter.MaxFilter(11)))
+    ang = 0.6 - math.radians(75) * (min(i, 17) - 11) if i >= 11 else rx / R + 0.6
+    nx, ny = rx + 2.5 * math.cos(ang), ry + 2.5 * math.sin(ang)
+    bd.ellipse([P(nx - .6, ny - .6), P(nx + .6, ny + .6)], fill=0)
+    m = g.copy()
+    m.paste(255, mask=mm)
+    m.paste(255, mask=bl)
+    return m
+
 def frame(i):
     rx, fx, mode = T[i]
     ry = rock_y(rx)
     if mode.startswith("tumble") and mode.count(":") > 2:
         ry -= float(mode.split(":")[3])  # boulder hops over him
+    if VARIANT == "circusphus":
+        return to_img(frame_circus(i, rx, fx, mode, ry))
     m = Image.new("L", (100 * K, 36 * K), 0)
     d = ImageDraw.Draw(m)
     d.polygon([P(0, Y0), P(88, Y1), P(96, Y1), P(100, Y1 + 3), P(100, 36), P(0, 36)], fill=255)
@@ -298,6 +359,9 @@ def frame(i):
         d.ellipse([P(nx - .6, ny - .6), P(nx + .6, ny + .6)], fill=0)
     if VARIANT == "surfingphus" and i == 12:
         sparkle(d, rx, ry)
+    return to_img(m)
+
+def to_img(m):
     a = m.resize((100, 36), Image.LANCZOS)
     img = Image.new("RGBA", (100, 36), (0, 0, 0, 0))
     img.putalpha(a)
