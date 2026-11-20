@@ -1,8 +1,24 @@
 # Sisyphus, Surfingphus, Rollingphus, Circusphus, Sisyphus-endless, Circusphus-endless & Rollingphus-endless — RunCat Neo runners
 
 This repo holds seven custom runners for [RunCat Neo](https://runcat-dev.github.io/RunCatNeo/):
-**Sisyphus** (below), **Surfingphus**, **Rollingphus**, **Circusphus**,
-**Sisyphus-endless**, **Circusphus-endless** and **Rollingphus-endless** (further down). Each has its own frames, zip and preview.
+Sisyphus and six variants of him, listed below. Each has its own frames, zip
+and preview.
+
+## All runners
+
+| Runner | What happens | Animation | Download |
+|---|---|---|---|
+| [Sisyphus](#sisyphus) | Pushes the boulder up the hill; it rolls back down and he walks after it. (18 frames) | ![Sisyphus](sisyphus-preview.png) | [`sisyphus-frames.zip`](sisyphus-frames.zip) |
+| **Surfingphus** | Pushes it up, then a surfboard pops in and he surfs it down. (18 frames) | ![Surfingphus](surfingphus-preview.png) | [`surfingphus-frames.zip`](surfingphus-frames.zip) |
+| **Rollingphus** | The boulder slips back, rolls over him, and he rolls down stuck to it. (18 frames) | ![Rollingphus](rollingphus-preview.png) | [`rollingphus-frames.zip`](rollingphus-frames.zip) |
+| **Circusphus** | Pushes it up, jumps on, and ball-walks down like a circus clown. (18 frames) | ![Circusphus](circusphus-preview.png) | [`circusphus-frames.zip`](circusphus-frames.zip) |
+| **Sisyphus-endless** | Close-up: pushes forever up a scrolling slope, never reaching the top. (8 frames) | ![Sisyphus-endless](sisyphus-endless-preview.png) | [`sisyphus-endless-frames.zip`](sisyphus-endless-frames.zip) |
+| **Circusphus-endless** | Close-up Circusphus: pushes up, jumps on, ball-walks down, hops off. (16 frames) | ![Circusphus-endless](circusphus-endless-preview.png) | [`circusphus-endless-frames.zip`](circusphus-endless-frames.zip) |
+| **Rollingphus-endless** | Close-up Rollingphus: pushes up, gets knocked over, rolls down stuck to the rim, sits dazed. (16 frames) | ![Rollingphus-endless](rollingphus-endless-preview.png) | [`rollingphus-endless-frames.zip`](rollingphus-endless-frames.zip) |
+
+All runners are 100 × 36 px monochrome PNG frames on a transparent background.
+Install any of them as described in [Install](#install), using the runner's
+name from the table as **Runner Name** and its own frames zip.
 
 ## Sisyphus
 
@@ -43,6 +59,11 @@ Pick one:
    frame of the animation.
 5. Save, then select **Sisyphus** as your runner.
 
+For any other runner in the [table](#all-runners), use its zip (for example
+`circusphus-endless-frames.zip`), set **Runner Name** to its name (for
+example `Circusphus-endless`), and add its PNGs in order from
+`<name>-frame-0.png` to the last frame.
+
 The labels above come from RunCat Neo's own UI text. Depending on your app
 version, the exact path may differ a little.
 
@@ -69,147 +90,6 @@ Sisyphus as the figure of a person facing a life with no final meaning, and
 ended with the line: *"One must imagine Sisyphus happy."*
 
 That fits a menu-bar runner well. Your CPU never finishes its work either.
-
-## Surfingphus — the variant that rides the boulder
-
-![Surfingphus preview](surfingphus-preview.png)
-
-Same boulder and the same push up the hill, on a slightly lower hilltop
-so the rider fits. At the top, Surfingphus
-climbs onto the boulder, and a surfboard pops into being across its top. He
-surfs it back down standing on the board, arms out for balance, then the
-board vanishes as he hops off at the bottom and starts pushing again.
-
-- 18 frames, 100 × 36 px, monochrome PNG with a transparent background
-- Frames 0–10 push the boulder up, as in Sisyphus (on the lower hill)
-
-Install it the same way as Sisyphus (see [Install](#install)), with these
-changes:
-
-- **Frames:** [`surfingphus-frames.zip`](surfingphus-frames.zip) unzips to
-  `surfingphus-frames/` with `surfingphus-frame-0.png` to
-  `surfingphus-frame-17.png`.
-- **Runner Name:** `Surfingphus`.
-- **Frame order:** add the PNGs in order, from `surfingphus-frame-0.png` to
-  `surfingphus-frame-17.png`.
-
-## Rollingphus — the variant that rolls down with the boulder
-
-![Rollingphus preview](rollingphus-preview.png)
-
-Same boulder and the same steep hill as Sisyphus. Near the top the boulder
-slips back and knocks Rollingphus flat, rolls over him, and he ends up stuck to
-its rim. He spins round and round with it all the way down, then drops off
-dazed at the bottom and starts pushing again.
-
-- 18 frames, 100 × 36 px, monochrome PNG with a transparent background
-- Frames 0–10 push the boulder up, exactly as in Sisyphus
-
-Install it the same way as Sisyphus (see [Install](#install)), with these
-changes:
-
-- **Frames:** [`rollingphus-frames.zip`](rollingphus-frames.zip) unzips to
-  `rollingphus-frames/` with `rollingphus-frame-0.png` to
-  `rollingphus-frame-17.png`.
-- **Runner Name:** `Rollingphus`.
-- **Frame order:** add the PNGs in order, from `rollingphus-frame-0.png` to
-  `rollingphus-frame-17.png`.
-
-## Circusphus — the variant that ball-walks down on the boulder
-
-![Circusphus preview](circusphus-preview.png)
-
-Same boulder and the same lower hill as Surfingphus. At the top Circusphus
-jumps up onto the boulder, knees tucked and arms raised, and stands on it with
-no board. As it rolls back down he walks in place on top, feet stepping one
-forward and one back and arms flailing for balance, like a circus clown on a
-ball. At the bottom he hops off and starts pushing again.
-
-- 18 frames, 100 × 36 px, monochrome PNG with a transparent background
-- Frames 0–10 push the boulder up, as in Surfingphus (on the lower hill)
-
-Install it the same way as Sisyphus (see [Install](#install)), with these
-changes:
-
-- **Frames:** [`circusphus-frames.zip`](circusphus-frames.zip) unzips to
-  `circusphus-frames/` with `circusphus-frame-0.png` to
-  `circusphus-frame-17.png`.
-- **Runner Name:** `Circusphus`.
-- **Frame order:** add the PNGs in order, from `circusphus-frame-0.png` to
-  `circusphus-frame-17.png`.
-
-## Sisyphus-endless — the close-up push loop that never ends
-
-![Sisyphus-endless preview](sisyphus-endless-preview.png)
-
-A close-up of Sisyphus pushing a bold boulder up a gentle slope without ever
-reaching the top. The boulder is a lumpy rock with flat faces, a chipped corner and a
-few small chips along one side; it turns 45 degrees per frame, so the rolling is
-easy to see even at menu-bar size. The ground is a single thin line with a few large pebbles that scroll
-past, and man, boulder and ground are always separated by a clear gap. He
-pushes in surges: the boulder jumps forward about 2 px as he drives and settles
-back a little, and his body bobs with it. The faster your CPU works, the faster
-he pushes.
-
-- 8 frames, 100 × 36 px, monochrome PNG with a transparent background
-- The whole loop is the push: there is no roll-back
-
-Install it the same way as Sisyphus (see [Install](#install)), with these
-changes:
-
-- **Frames:** [`sisyphus-endless-frames.zip`](sisyphus-endless-frames.zip)
-  unzips to `sisyphus-endless-frames/` with `sisyphus-endless-frame-0.png` to
-  `sisyphus-endless-frame-7.png`.
-- **Runner Name:** `Sisyphus-endless`.
-- **Frame order:** add the PNGs in order, from `sisyphus-endless-frame-0.png`
-  to `sisyphus-endless-frame-7.png`.
-
-## Circusphus-endless — the clown ride in the close-up style
-
-![Circusphus-endless preview](circusphus-endless-preview.png)
-
-Circusphus drawn in the Sisyphus-endless close-up style: the camera follows the
-lumpy chipped boulder on a thin, steep ground line with pebbles. He pushes it up
-(the ground scrolls left and the boulder turns forward), jumps up onto it, and
-as it rolls back down he ball-walks on top like a circus clown, feet stepping
-and arms flailing (the ground scrolls right and the boulder turns back). Once it
-stops he hops off to the left and starts pushing again. The boulder is smaller
-than in Sisyphus-endless so that he fits standing on top of it.
-
-- 16 frames, 100 × 36 px, monochrome PNG with a transparent background
-- Frames 0–7 push up, 8 jumps on, 9–14 ride down, 15 hops off
-
-Install it the same way as Sisyphus (see [Install](#install)), with these
-changes:
-
-- **Frames:** [`circusphus-endless-frames.zip`](circusphus-endless-frames.zip)
-  unzips to `circusphus-endless-frames/` with `circusphus-endless-frame-0.png`
-  to `circusphus-endless-frame-15.png`.
-- **Runner Name:** `Circusphus-endless`.
-- **Frame order:** add the PNGs in order, from `circusphus-endless-frame-0.png`
-  to `circusphus-endless-frame-15.png`.
-
-## Rollingphus-endless — the tumble in the close-up style
-
-![Rollingphus-endless preview](rollingphus-endless-preview.png)
-
-Rollingphus drawn in the Sisyphus-endless close-up style, on the same steep
-ground line and with the same boulder as Circusphus-endless. He pushes it up,
-then it slips back and knocks him over. It rolls back down with him stuck to
-its rim like a sticker, turning round with it and bumping up each time it rolls
-over him. Once it stops he sits beside it, dazed, then gets up and pushes again.
-
-- 16 frames, 100 × 36 px, monochrome PNG with a transparent background
-- Frames 0–7 push up, 8 knocked back, 9–14 roll down stuck to the rim, 15 sits dazed
-
-Install it the same way as Sisyphus (see [Install](#install)), with these
-changes:
-
-- **Frames:** [`rollingphus-endless-frames.zip`](rollingphus-endless-frames.zip) unzips to `rollingphus-endless-frames/` with
-  `rollingphus-endless-frame-0.png` to `rollingphus-endless-frame-15.png`.
-- **Runner Name:** `Rollingphus-endless`.
-- **Frame order:** add the PNGs in order, from `rollingphus-endless-frame-0.png` to
-  `rollingphus-endless-frame-15.png`.
 
 ## Rebuilding the frames
 
