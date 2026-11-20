@@ -327,12 +327,13 @@ def frame_circus(i, rx, fx, mode, ry):
 # slipping (15 deg per frame), so 16 frames = 2 foot cycles = 2/3 boulder turn = one bump period.
 ENF = 16
 ER = 14.0                          # boulder radius (old close-up: 11.8)
-SC = ER / 12.6                     # figure scale (the figure was drawn for ER 12.6)
+SC = 1.15 * ER / 12.6              # figure scale (drawn for ER 12.6, enlarged 15% for the close-up)
 ECROP = 6.5                        # px of the boulder's top cut off by the canvas top edge
+EOX = 84.0                         # canvas x of the boulder centre (man sits at the middle, boulder to his right)
 ETH = math.radians(19)             # slope angle
 GS = ER * math.radians(15)         # ground scroll per frame = rolling distance at 15 deg per frame
 EPER = ENF * GS                    # bump pattern period (= total scroll over the loop)
-EO = [58.0, 0.0]                   # canvas point of the boulder's contact with the mean slope line (y set below)
+EO = [EOX, 0.0]                   # canvas point of the boulder's contact with the mean slope line (y set below)
 
 def W(s, n):
     return (EO[0] + s * math.cos(ETH) - n * math.sin(ETH), EO[1] - s * math.sin(ETH) - n * math.cos(ETH))
@@ -362,8 +363,8 @@ def sis_man(d, i, sc, hs, hn, ap):
     m = SC
     ta = math.radians(ap)
     sh = (hs + 11.5 * m * math.sin(ta), hn + 11.5 * m * math.cos(ta))
-    head = (sh[0] + 4.0 * m * math.sin(ta + .5), sh[1] + 4.0 * m * math.cos(ta + .5))
-    line(d, W(hs, hn), W(*sh), 3.6 * m)
+    head = (sh[0] + 3.2 * m, sh[1] - 0.9 * m)   # canvas offset: ahead of and above the shoulder
+    line(d, W(hs, hn), W(*sh), 3.2 * m)
     for ph in (0, 2):
         u = (i + ph) % 4
         tri = u if u <= 2 else 4 - u   # stance 2 frames backwards with the ground, swing 2 frames forwards
@@ -386,20 +387,35 @@ def frame_endless(i):
     rh = ER + 0.9
     cn = boulder_n(sc)
     cxy = W(0, cn)
-    hs, ap = -24.5 * SC, 58.0
-    hn = 14.0 * SC + 0.6 * math.cos(2 * math.pi * i / 4)
+    hs, ap = -29.0 * SC, 62.0
+    hn = 13.4 * SC + 0.6 * math.cos(2 * math.pi * i / 4)
+    bm = Image.new("L", (Wd, Ht), 0)
+    shw, head = sis_man(ImageDraw.Draw(bm), i, sc, hs, hn, ap)
+    HR = 2.5 * SC                      # head radius
+    # head: own blob, tucked toward the boulder, thin gap to the torso and arms
+    hm = Image.new("L", (Wd, Ht), 0)
+    ImageDraw.Draw(hm).ellipse([P(head[0] - HR, head[1] - HR), P(head[0] + HR, head[1] + HR)], fill=255)
+    # arms: bent, hands (palm blobs) flat on the boulder's left flank just outside its halo
+    am = Image.new("L", (Wd, Ht), 0)
+    hipc = W(hs, hn)
+    for al, f in ((-14, 0.92), (-44, 0.62)):
+        a = math.radians(al)
+        ext = 0.5 * math.sin(2 * math.pi * i / 4) * (1 if al == -14 else -1)
+        hxy = (cxy[0] - (rh + 1.7) * math.cos(a) + ext, cxy[1] - (rh + 1.7) * math.sin(a))
+        st = (hipc[0] + f * (shw[0] - hipc[0]), hipc[1] + f * (shw[1] - hipc[1]))   # chest point on the torso axis
+        el = ik(st, hxy, 5.4 * SC, 5.4 * SC, 1)
+        a2 = Image.new("L", (Wd, Ht), 0)
+        ad = ImageDraw.Draw(a2)
+        line(ad, st, el, 2.0 * SC); line(ad, el, hxy, 2.0 * SC)
+        ad.ellipse([P(hxy[0] - 2.0, hxy[1] - 2.0), P(hxy[0] + 2.0, hxy[1] + 2.0)], fill=255)
+        a2.paste(0, mask=am.filter(ImageFilter.MaxFilter(17)))   # thin gap between the two arms
+        am.paste(255, mask=a2)
+    am.paste(0, mask=bm.filter(ImageFilter.MaxFilter(17)))
+    am.paste(0, mask=hm.filter(ImageFilter.MaxFilter(17)))
+    bm.paste(0, mask=hm.filter(ImageFilter.MaxFilter(17)))
     mm = Image.new("L", (Wd, Ht), 0)
     md = ImageDraw.Draw(mm)
-    shw, head = sis_man(md, i, sc, hs, hn, ap)
-    # arms: shoulder to two hand spots on the boulder's left flank
-    for al in (-4, -26):
-        a = math.radians(al)
-        hxy = (cxy[0] - (ER - 0.9) * math.cos(a), cxy[1] - (ER - 0.9) * math.sin(a))
-        ext = 0.5 * math.sin(2 * math.pi * i / 4) * (1 if al == -4 else -1)
-        hxy = (hxy[0] + ext, hxy[1])
-        el = ik((shw[0] - 0.6, shw[1] + 0.6), hxy, 5.0 * SC, 5.0 * SC, 1)
-        line(md, (shw[0] - 0.6, shw[1] + 0.6), el, 2.1 * SC); line(md, el, hxy, 2.1 * SC)
-    md.ellipse([P(head[0] - 2.6 * SC, head[1] - 2.6 * SC), P(head[0] + 2.6 * SC, head[1] + 2.6 * SC)], fill=255)
+    for L in (bm, am, hm): mm.paste(255, mask=L)
     t = i % 8
     if t < 5:   # sweat drop flicked off the head
         sx, sy = head[0] - 2.4 - 1.1 * t, head[1] - 3.0 + 0.2 * t * t
